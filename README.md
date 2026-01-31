@@ -23,6 +23,12 @@ A web app to play the card game **Heroes & Wizards** online. Built with React an
    npm test
    ```
 
+## Project health & folders
+
+- **`.git`** — Your Git repo lives here. Cursor/VS Code often **hides** `.git` in the file explorer so the sidebar stays clean. You can still use Git (Source Control panel, terminal). To show hidden files: File → Preferences → Settings → search “files exclude” and check if `.git` is excluded.
+- **`node_modules`** — After `npm install`, all dependencies (Next.js, React, TypeScript, etc.) are installed here. You don’t edit this folder; it’s in `.gitignore` and can be recreated anytime with `npm install`. Warnings about “vulnerabilities” or “peer dependencies” from npm are common and usually safe to ignore for local dev; fix them when you’re ready to deploy.
+- **TypeScript** — If the IDE showed errors on `tsconfig.json` (e.g. “Cannot find type definition file”), the project now uses `typeRoots` so TypeScript finds the types in `node_modules/@types`. Reload the window (Ctrl+Shift+P → “Developer: Reload Window”) if errors persist.
+
 ## Project structure
 
 - `src/data/` — Card definitions (72 cards), types, constants

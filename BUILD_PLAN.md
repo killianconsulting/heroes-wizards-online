@@ -4,6 +4,25 @@ A phased plan to build the web app, starting with game logic and testing, then a
 
 ---
 
+## Progress (what we’ve done)
+
+| Done | Item |
+|------|------|
+| ✅ | **Tech stack**: React + Next.js (App Router), TypeScript, Jest. Git + `.gitignore` set up. |
+| ✅ | **1.1** Card data: `src/data/cards.ts` — all 72 cards with image paths; `constants.ts`, `types.ts`. |
+| ✅ | **1.2** State types: `src/engine/state.ts` — `GameState`, `Player`, `Party`, `CardId`, `createEmptyParty()`. |
+| ✅ | **1.3** Setup: `src/engine/setup.ts` — `createShuffledDeck()`, `createGame(playerNames)` (shuffle, deal 3, first player). |
+| ✅ | **1.4** Validation: `src/engine/validation.ts` — `getLegalActions()`, `canPlayQuest()`, `canPlayEagles()` (Spellcaster = 5 skills). |
+| ✅ | **1.8** (partial) Tests: `tests/engine/setup.test.ts`, `validation.test.ts` for setup and validation. |
+| ✅ | **Assets**: `public/` and `public/cards/` created; card images added to `public/cards/`. |
+| ✅ | **App shell**: Next.js `src/app/layout.tsx`, `page.tsx`, `globals.css`; placeholder home page. |
+| ✅ | **1.5** Actions: `src/engine/actions.ts` — `drawCard()`, `playCard()`, `dumpCard()`; `events.ts` stub (Eagles wins; others advance turn). |
+| ✅ | **1.6** Event resolvers: `src/engine/events.ts` — Archery, Royal, Tavern, Unguarded (swap + Healer block), Feast East/West, Fortune Reading, Hunting Expedition, Spell of Summoning, Wizard Tower Repairs, Eagles. |
+| ✅ | **1.7** Wizard rules: Stargazer (maybeAdvanceTurn — second card play); Summoner (canSummonFromPile, summonFromEventPile). Healer/Spellcaster already in 1.4/1.6. |
+| ⬜ | **Next**: Phase 2 UI (start screen, game screen, components). |
+
+---
+
 ## 1. Tech stack (recommended)
 
 | Layer | Choice | Why |
@@ -183,40 +202,33 @@ So you need:
 heroes_wizards/
 ├── BUILD_PLAN.md           # this file
 ├── Deck Library and Rules.md
-├── cards/                  # existing card images
+├── cards/                  # source card images (copy into public/cards)
 ├── public/
+│   └── cards/              # ✅ card images (served at /cards/...)
 ├── src/
+│   ├── app/                # Next.js App Router
+│   │   ├── layout.tsx
+│   │   ├── page.tsx
+│   │   └── globals.css
 │   ├── data/
-│   │   ├── cards.ts        # all 72 cards + image paths
-│   │   └── constants.ts
+│   │   ├── cards.ts        # ✅ all 72 cards + image paths
+│   │   ├── constants.ts    # ✅
+│   │   └── types.ts        # ✅
 │   ├── engine/
-│   │   ├── state.ts        # types for GameState, Player, etc.
-│   │   ├── setup.ts        # createGame, shuffle, deal
-│   │   ├── actions.ts      # draw, play, dump
-│   │   ├── validation.ts   # getLegalActions, canPlayQuest
-│   │   ├── events.ts       # resolve Archery Contest, Feast, etc.
-│   │   └── wizards.ts      # apply Healer, Spellcaster, etc.
-│   ├── components/
-│   │   ├── Card.tsx
-│   │   ├── Hand.tsx
-│   │   ├── Party.tsx
-│   │   ├── Deck.tsx
-│   │   ├── EventPile.tsx
-│   │   ├── ActionBar.tsx
-│   │   └── ...
-│   ├── screens/
-│   │   ├── StartScreen.tsx
-│   │   ├── GameScreen.tsx
-│   │   └── LobbyScreen.tsx  # Phase 4
-│   ├── hooks/
-│   │   └── useGameState.ts
-│   ├── App.tsx
-│   └── main.tsx
+│   │   ├── state.ts        # ✅ GameState, Player, Party
+│   │   ├── setup.ts        # ✅ createGame, shuffle, deal
+│   │   ├── validation.ts   # ✅ getLegalActions, canPlayQuest
+│   │   ├── index.ts        # ✅
+│   │   ├── actions.ts      # ✅ drawCard, playCard, dumpCard
+│   │   ├── events.ts       # ✅ full event resolvers (1.6)
+│   │   └── wizards.ts      # TODO (optional) wizard helpers
+│   ├── components/         # TODO Phase 2
+│   ├── screens/            # TODO Phase 2
+│   └── hooks/              # TODO Phase 2
 ├── tests/
 │   └── engine/
-│       ├── setup.test.ts
-│       ├── actions.test.ts
-│       └── events.test.ts
+│       ├── setup.test.ts   # ✅
+│       └── validation.test.ts  # ✅
 └── package.json
 ```
 
@@ -224,15 +236,15 @@ heroes_wizards/
 
 ## 8. Order of implementation (checklist)
 
-- [ ] **1.1** Card data: `cards.ts` (and image mapping) for all 72 cards.
-- [ ] **1.2** State types: `GameState`, `Player`, `Party`, etc.
-- [ ] **1.3** Setup: shuffle, deal 3, first player.
-- [ ] **1.4** Validation: `getLegalActions`, `canPlayQuest` (with Spellcaster).
-- [ ] **1.5** Actions: `drawCard`, `playCard`, `dumpCard` (skeleton; play delegates to event/hero/wizard/quest).
-- [ ] **1.6** Event resolvers: one by one (Archery, Feast, Fortune, Hunting, Royal, Spell of Summoning, Tavern, Eagles, Unguarded, Wizard Tower).
-- [ ] **1.7** Wizard rules: Healer, Spellcaster, Stargazer, Summoner in validation and resolution.
-- [ ] **1.8** Tests for engine (setup, actions, events, wizards, win conditions).
-- [ ] **2.1** React app shell: start screen → game screen.
+- [x] **1.1** Card data: `cards.ts` (and image mapping) for all 72 cards.
+- [x] **1.2** State types: `GameState`, `Player`, `Party`, etc.
+- [x] **1.3** Setup: shuffle, deal 3, first player.
+- [x] **1.4** Validation: `getLegalActions`, `canPlayQuest` (with Spellcaster).
+- [x] **1.5** Actions: `drawCard`, `playCard`, `dumpCard` (skeleton; play delegates to event/hero/wizard/quest).
+- [x] **1.6** Event resolvers: one by one (Archery, Feast, Fortune, Hunting, Royal, Spell of Summoning, Tavern, Eagles, Unguarded, Wizard Tower).
+- [x] **1.7** Wizard rules: Healer (1.6), Spellcaster (1.4), Stargazer (maybeAdvanceTurn), Summoner (summonFromEventPile).
+- [ ] **1.8** Tests for engine (setup ✅, validation ✅; remaining: actions, events, wizards, win conditions).
+- [x] **2.1** (shell only) Next.js app: `src/app/` with layout, page; placeholder home. Start/game screens not yet built.
 - [ ] **2.2** Card, Hand, Party, Deck, EventPile components.
 - [ ] **2.3** Action bar and turn flow; connect to engine.
 - [ ] **2.4** Event UI: target selection (player/card) where needed.
@@ -252,4 +264,4 @@ heroes_wizards/
 - **Phase 3**: Wizard and edge-case polish.  
 - **Phase 4**: Lobby (create/join) and multiplayer sync, reusing the same engine on the server (or host).
 
-Starting with the engine and delaying the lobby is the right order: you can play and test the full game locally before touching networking. If you tell me your preferred stack (e.g. “React + Vite”, “Next.js”, “TypeScript only for now”), the next step is to sketch **Phase 1.1–1.4** (card data, state types, setup, validation) in code.
+Starting with the engine and delaying the lobby is the right order: you can play and test the full game locally before touching networking. If you tell me your preferred stack (e.g. “React + Vite”, “Next.js”, “TypeScript only for now”), **Phase 1.1–1.4 and app shell are done;** next is **1.5–1.7** (actions, event resolvers, wizard rules), then Phase 2 UI.

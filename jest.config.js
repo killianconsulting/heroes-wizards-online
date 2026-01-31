@@ -1,5 +1,11 @@
+const nextJest = require('next/jest');
+
+const createJestConfig = nextJest({
+  dir: './',
+});
+
 /** @type {import('jest').Config} */
-module.exports = {
+const config = {
   testEnvironment: 'node',
   testMatch: ['**/__tests__/**/*.test.ts', '**/tests/**/*.test.ts'],
   moduleNameMapper: {
@@ -7,3 +13,5 @@ module.exports = {
   },
   roots: ['<rootDir>/src', '<rootDir>/tests'],
 };
+
+module.exports = createJestConfig(config);

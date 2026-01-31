@@ -27,6 +27,32 @@ describe('validation', () => {
       const legal = getLegalActions(state);
       expect(legal.canDump).toBe(true);
     });
+
+    it('canSummonFromPile is true when current player has Summoner and event pile is non-empty', () => {
+      const state = createGame(['Alice', 'Bob']);
+      const stateWithSummonerAndPile = {
+        ...state,
+        eventPile: [16],
+        players: state.players.map((p, i) =>
+          i === 0 ? { ...p, party: { ...p.party, summoner: 13 } } : p
+        ),
+      };
+      const legal = getLegalActions(stateWithSummonerAndPile);
+      expect(legal.canSummonFromPile).toBe(true);
+    });
+
+    it('canSummonFromPile is false when event pile is empty', () => {
+      const state = createGame(['Alice', 'Bob']);
+      const stateWithSummoner = {
+        ...state,
+        eventPile: [],
+        players: state.players.map((p, i) =>
+          i === 0 ? { ...p, party: { ...p.party, summoner: 13 } } : p
+        ),
+      };
+      const legal = getLegalActions(stateWithSummoner);
+      expect(legal.canSummonFromPile).toBe(false);
+    });
   });
 
   describe('canPlayQuest', () => {

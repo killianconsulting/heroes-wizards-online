@@ -14,6 +14,8 @@ export interface LegalActions {
   canDump: boolean;
   playableCardIds: number[];
   canPlayEagles: boolean;
+  /** Summoner: "As a turn, you can draw any one card from the event pile" */
+  canSummonFromPile: boolean;
 }
 
 /**
@@ -89,6 +91,7 @@ export function getLegalActions(state: GameState): LegalActions {
       canDump: false,
       playableCardIds: [],
       canPlayEagles: false,
+      canSummonFromPile: false,
     };
   }
 
@@ -123,10 +126,14 @@ export function getLegalActions(state: GameState): LegalActions {
     return card.type !== 'event';
   });
 
+  const canSummonFromPile =
+    current.party.summoner !== null && state.eventPile.length > 0;
+
   return {
     canDraw,
     canDump,
     playableCardIds,
     canPlayEagles: eaglesPlayable,
+    canSummonFromPile,
   };
 }
