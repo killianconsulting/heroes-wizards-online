@@ -5,8 +5,8 @@
 
 import { getCard } from '@/data/cards';
 import { isHeroCard, isWizardCard, isEventCard, isQuestCard } from '@/data/types';
-import type { HeroType, WizardType } from '@/data/constants';
-import type { GameState, Player, Party } from './state';
+import type { HeroType } from '@/data/constants';
+import type { GameState, Party } from './state';
 import type { CardId } from './state';
 import { canPlayQuest } from './validation';
 import { resolveEvent, advanceTurn, maybeAdvanceTurn, type EventTarget } from './events';
@@ -19,21 +19,15 @@ const HERO_PARTY_KEY: Record<HeroType, keyof Party> = {
   Thief: 'thief',
 };
 
-/** Party slot key for wizard type */
-const WIZARD_PARTY_KEY: Record<WizardType, keyof Party> = {
-  Healer: 'healer',
-  Spellcaster: 'spellcaster',
-  Stargazer: 'stargazer',
-  Summoner: 'summoner',
-};
-
 /**
- * Draw one card from the deck into the current player's hand, then advance turn.
+ * Draw one card from the deck into the current player's hand.
+ * Does not advance turn; player can look at hand then click "Pass turn".
  * Caller should ensure getLegalActions(state).canDraw is true.
  */
 export function drawCard(state: GameState): GameState {
   if (state.phase !== 'chooseAction' || state.winnerPlayerId) return state;
   if (state.deck.length === 0) return state;
+  if (state.drewThisTurn) return state;
 
   const currentIndex = state.currentPlayerIndex;
   const [drawn, ...restDeck] = state.deck;
@@ -43,13 +37,20 @@ export function drawCard(state: GameState): GameState {
       : p
   );
 
-  const nextState: GameState = {
+  return {
     ...state,
     deck: restDeck,
     players,
+    drewThisTurn: true,
   };
+}
 
-  return advanceTurn(nextState);
+/**
+ * Pass turn to the next player. Call after drawing (or anytime) to end turn.
+ */
+export function passTurn(state: GameState): GameState {
+  if (state.phase !== 'chooseAction' || state.winnerPlayerId) return state;
+  return advanceTurn(state);
 }
 
 /**
@@ -90,9 +91,8 @@ export function playCard(
   }
 
   if (isWizardCard(card)) {
-    const slotKey = WIZARD_PARTY_KEY[card.wizardType];
-    const existing = current.party[slotKey];
-    const newParty: Party = { ...current.party, [slotKey]: cardId };
+    const existing = current.party.wizard;
+    const newParty: Party = { ...current.party, wizard: cardId };
     const handAfterSwap = existing !== null ? [...newHand, existing] : newHand;
 
     const players = state.players.map((p, i) =>
@@ -175,7 +175,8 @@ export function summonFromEventPile(state: GameState, cardId: CardId): GameState
 
   const currentIndex = state.currentPlayerIndex;
   const current = state.players[currentIndex];
-  if (current.party.summoner === null) return state;
+  const wizardCard = current.party.wizard !== null ? getCard(current.party.wizard) : null;
+  if (current.party.wizard === null || !wizardCard || !isWizardCard(wizardCard) || wizardCard.wizardType !== 'Summoner') return state;
 
   const pileIndex = state.eventPile.indexOf(cardId);
   if (pileIndex === -1) return state;

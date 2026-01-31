@@ -1,12 +1,12 @@
 import { createGame } from '@/engine/setup';
-import { drawCard, playCard, dumpCard, summonFromEventPile } from '@/engine/actions';
+import { drawCard, playCard, dumpCard, summonFromEventPile, passTurn } from '@/engine/actions';
 import { getLegalActions } from '@/engine/validation';
 import { getCard, CARDS } from '@/data/cards';
 import { isHeroCard, isQuestCard } from '@/data/types';
 
 describe('actions', () => {
   describe('drawCard', () => {
-    it('takes top card from deck into current player hand and advances turn', () => {
+    it('takes top card from deck into current player hand and does not advance turn', () => {
       const state = createGame(['Alice', 'Bob']);
       const deckLen = state.deck.length;
       const aliceHandLen = state.players[0].hand.length;
@@ -18,7 +18,8 @@ describe('actions', () => {
       expect(next.deck[0]).not.toBe(topCard);
       expect(next.players[0].hand).toHaveLength(aliceHandLen + 1);
       expect(next.players[0].hand).toContain(topCard);
-      expect(next.currentPlayerIndex).toBe(1);
+      expect(next.currentPlayerIndex).toBe(0);
+      expect(next.drewThisTurn).toBe(true);
     });
 
     it('does not mutate original state', () => {
@@ -30,6 +31,19 @@ describe('actions', () => {
 
       expect(state.deck).toEqual(deckSnapshot);
       expect(state.players[0].hand).toEqual(handSnapshot);
+    });
+  });
+
+  describe('passTurn', () => {
+    it('advances to next player (e.g. after drawing and looking at hand)', () => {
+      const state = createGame(['Alice', 'Bob']);
+      const afterDraw = drawCard(state);
+      expect(afterDraw.currentPlayerIndex).toBe(0);
+
+      const next = passTurn(afterDraw);
+
+      expect(next.currentPlayerIndex).toBe(1);
+      expect(next.drewThisTurn).toBeUndefined();
     });
   });
 
@@ -113,7 +127,7 @@ describe('actions', () => {
             ? {
                 ...p,
                 hand: [heroCardId, ...deckWithout.slice(0, 2)],
-                party: { ...p.party, stargazer: stargazerId },
+                party: { ...p.party, wizard: stargazerId },
               }
             : p
         ),
@@ -135,7 +149,7 @@ describe('actions', () => {
         ...state,
         eventPile: [cardId],
         players: state.players.map((p, i) =>
-          i === 0 ? { ...p, party: { ...p.party, summoner: summonerId } } : p
+          i === 0 ? { ...p, party: { ...p.party, wizard: summonerId } } : p
         ),
       };
 

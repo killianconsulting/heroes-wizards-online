@@ -3,32 +3,25 @@
  * Card ids are 0..71 (indices into CARDS).
  */
 
-import type { HeroType, WizardType } from '@/data/constants';
 
 export type CardId = number;
 
-/** Party: one slot per hero type, one per wizard type. Value = card id or null. */
+/** Party: one Wizard slot (any wizard type), one slot per hero type. Value = card id or null. */
 export interface Party {
+  wizard: CardId | null;
   knight: CardId | null;
   archer: CardId | null;
   barbarian: CardId | null;
   thief: CardId | null;
-  healer: CardId | null;
-  spellcaster: CardId | null;
-  stargazer: CardId | null;
-  summoner: CardId | null;
 }
 
 export function createEmptyParty(): Party {
   return {
+    wizard: null,
     knight: null,
     archer: null,
     barbarian: null,
     thief: null,
-    healer: null,
-    spellcaster: null,
-    stargazer: null,
-    summoner: null,
   };
 }
 
@@ -53,4 +46,6 @@ export interface GameState {
   pendingEventTarget?: { playerIndex?: number; cardId?: CardId };
   /** Stargazer: after playing one card, allow a second play this turn. */
   stargazerSecondPlayUsed?: boolean;
+  /** After drawing a card, player can look at hand then pass turn (one draw per turn). */
+  drewThisTurn?: boolean;
 }

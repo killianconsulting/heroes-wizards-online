@@ -16,6 +16,8 @@ export interface LegalActions {
   canPlayEagles: boolean;
   /** Summoner: "As a turn, you can draw any one card from the event pile" */
   canSummonFromPile: boolean;
+  /** End turn (e.g. after drawing and looking at hand) */
+  canPassTurn: boolean;
 }
 
 /**
@@ -51,7 +53,9 @@ function countSkillsInParty(state: GameState, playerIndex: number): Record<Skill
  * Whether this player has Spellcaster in their party (quest threshold = 5).
  */
 function hasSpellcaster(party: Party): boolean {
-  return party.spellcaster !== null;
+  if (party.wizard === null) return false;
+  const card = getCard(party.wizard);
+  return isWizardCard(card) && card.wizardType === 'Spellcaster';
 }
 
 /**
@@ -92,13 +96,15 @@ export function getLegalActions(state: GameState): LegalActions {
       playableCardIds: [],
       canPlayEagles: false,
       canSummonFromPile: false,
+      canPassTurn: false,
     };
   }
 
   const current = state.players[state.currentPlayerIndex];
   const handSize = current.hand.length;
 
-  const canDraw = handSize < MAX_HAND_SIZE;
+  /** One draw per turn; after drawing, use Pass turn to end */
+  const canDraw = handSize < MAX_HAND_SIZE && !state.drewThisTurn;
 
   for (const cardId of current.hand) {
     const card = getCard(cardId);
@@ -126,8 +132,13 @@ export function getLegalActions(state: GameState): LegalActions {
     return card.type !== 'event';
   });
 
-  const canSummonFromPile =
-    current.party.summoner !== null && state.eventPile.length > 0;
+  const hasSummoner =
+    current.party.wizard !== null &&
+    isWizardCard(getCard(current.party.wizard)) &&
+    getCard(current.party.wizard).wizardType === 'Summoner';
+  const canSummonFromPile = hasSummoner && state.eventPile.length > 0;
+
+  const canPassTurn = true;
 
   return {
     canDraw,
@@ -135,5 +146,6 @@ export function getLegalActions(state: GameState): LegalActions {
     playableCardIds,
     canPlayEagles: eaglesPlayable,
     canSummonFromPile,
+    canPassTurn,
   };
 }

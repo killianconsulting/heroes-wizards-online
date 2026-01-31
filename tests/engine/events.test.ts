@@ -45,7 +45,7 @@ describe('events', () => {
         deck: deckWithout.slice(2),
         players: state.players.map((p, i) =>
           i === 1
-            ? { ...p, party: { ...p.party, archer: archerId, healer: healerId } }
+            ? { ...p, party: { ...p.party, archer: archerId, wizard: healerId } }
             : p
         ),
       };
@@ -106,16 +106,13 @@ describe('events', () => {
       const stateWithWizard = {
         ...state,
         players: state.players.map((p, i) =>
-          i === 1 ? { ...p, party: { ...p.party, healer: wizardId } } : p
+          i === 1 ? { ...p, party: { ...p.party, wizard: wizardId } } : p
         ),
       };
 
-      const next = resolveEvent(stateWithWizard, 42, {
-        playerIndex: 1,
-        cardId: wizardId,
-      });
+      const next = resolveEvent(stateWithWizard, 42, { playerIndex: 1 });
 
-      expect(next.players[1].party.healer).toBe(null);
+      expect(next.players[1].party.wizard).toBe(null);
       expect(next.eventPile).toContain(wizardId);
       expect(next.eventPile).toHaveLength(pileLen + 1);
       expect(next.currentPlayerIndex).toBe(1);

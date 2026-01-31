@@ -19,7 +19,8 @@ A phased plan to build the web app, starting with game logic and testing, then a
 | ✅ | **1.5** Actions: `src/engine/actions.ts` — `drawCard()`, `playCard()`, `dumpCard()`; `events.ts` stub (Eagles wins; others advance turn). |
 | ✅ | **1.6** Event resolvers: `src/engine/events.ts` — Archery, Royal, Tavern, Unguarded (swap + Healer block), Feast East/West, Fortune Reading, Hunting Expedition, Spell of Summoning, Wizard Tower Repairs, Eagles. |
 | ✅ | **1.7** Wizard rules: Stargazer (maybeAdvanceTurn — second card play); Summoner (canSummonFromPile, summonFromEventPile). Healer/Spellcaster already in 1.4/1.6. |
-| ⬜ | **Next**: Phase 2 UI (start screen, game screen, components). |
+| ✅ | **2.1–2.5** Phase 2 UI: StartScreen, GameScreen, WinScreen; Card, Hand, Party, Deck, EventPile, ActionBar, TargetSelector; useGameState; event target flow. |
+| ⬜ | **Next**: Phase 2 polish (2.4 event UI edge cases, 2.5 tweaks) or Phase 3/4. |
 
 ---
 

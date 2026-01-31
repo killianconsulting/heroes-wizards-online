@@ -5,7 +5,7 @@
 
 import { getCard } from '@/data/cards';
 import { isEventCard, isHeroCard, isWizardCard } from '@/data/types';
-import type { HeroType, WizardType } from '@/data/constants';
+import type { HeroType } from '@/data/constants';
 import type { GameState, Party } from './state';
 import type { CardId } from './state';
 
@@ -21,21 +21,18 @@ const HERO_PARTY_KEY: Record<HeroType, keyof Party> = {
   Thief: 'thief',
 };
 
-const WIZARD_PARTY_KEY: Record<WizardType, keyof Party> = {
-  Healer: 'healer',
-  Spellcaster: 'spellcaster',
-  Stargazer: 'stargazer',
-  Summoner: 'summoner',
-};
-
 /** Healer blocks stealing heroes (not wizards) from this party. */
 function hasHealer(party: Party): boolean {
-  return party.healer !== null;
+  if (party.wizard === null) return false;
+  const card = getCard(party.wizard);
+  return isWizardCard(card) && card.wizardType === 'Healer';
 }
 
 /** Stargazer: "You can play 2 cards in one turn" — allows second play before advancing. */
 function hasStargazer(party: Party): boolean {
-  return party.stargazer !== null;
+  if (party.wizard === null) return false;
+  const card = getCard(party.wizard);
+  return isWizardCard(card) && card.wizardType === 'Stargazer';
 }
 
 /**
@@ -85,28 +82,24 @@ function swapHeroSlot(
 }
 
 /**
- * Swap a wizard slot between current player and target player.
+ * Swap wizard slot between current player and target player.
  * Healer does not block wizard steals.
  */
-function swapWizardSlot(
-  state: GameState,
-  slotKey: 'healer' | 'spellcaster' | 'stargazer' | 'summoner',
-  targetPlayerIndex: number
-): GameState {
+function swapWizardSlot(state: GameState, targetPlayerIndex: number): GameState {
   const currentIndex = state.currentPlayerIndex;
   if (targetPlayerIndex === currentIndex) return maybeAdvanceTurn(state);
 
-  const targetCard = state.players[targetPlayerIndex].party[slotKey];
+  const targetCard = state.players[targetPlayerIndex].party.wizard;
   if (targetCard === null) return maybeAdvanceTurn(state);
 
-  const ourCard = state.players[currentIndex].party[slotKey];
+  const ourCard = state.players[currentIndex].party.wizard;
 
   const newPlayers = state.players.map((p, i) => {
     if (i === currentIndex) {
-      return { ...p, party: { ...p.party, [slotKey]: targetCard } };
+      return { ...p, party: { ...p.party, wizard: targetCard } };
     }
     if (i === targetPlayerIndex) {
-      return { ...p, party: { ...p.party, [slotKey]: ourCard } };
+      return { ...p, party: { ...p.party, wizard: ourCard } };
     }
     return p;
   });
@@ -220,19 +213,14 @@ export function resolveEvent(
 
     case 'wizard_tower_repairs': {
       const targetIndex = target?.playerIndex;
-      const wizardCardId = target?.cardId;
       if (targetIndex === undefined || targetIndex < 0 || targetIndex >= n)
         return maybeAdvanceTurn(state);
-      if (wizardCardId === undefined) return maybeAdvanceTurn(state);
-      const wizardCard = getCard(wizardCardId);
-      if (!isWizardCard(wizardCard)) return maybeAdvanceTurn(state);
-      const slotKey = WIZARD_PARTY_KEY[wizardCard.wizardType];
       const targetParty = state.players[targetIndex].party;
-      const wizardInParty = targetParty[slotKey];
-      if (wizardInParty !== wizardCardId) return maybeAdvanceTurn(state);
+      const wizardInParty = targetParty.wizard;
+      if (wizardInParty === null) return maybeAdvanceTurn(state);
 
-      const newParty = { ...targetParty, [slotKey]: null };
-      const newEventPile = [...state.eventPile, wizardCardId];
+      const newParty = { ...targetParty, wizard: null };
+      const newEventPile = [...state.eventPile, wizardInParty];
       const newPlayers = state.players.map((p, i) =>
         i === targetIndex ? { ...p, party: newParty } : p
       );
@@ -255,5 +243,6 @@ export function advanceTurn(state: GameState): GameState {
     ...state,
     currentPlayerIndex: nextIndex,
     stargazerSecondPlayUsed: undefined,
+    drewThisTurn: undefined,
   };
 }

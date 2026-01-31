@@ -34,7 +34,7 @@ describe('validation', () => {
         ...state,
         eventPile: [16],
         players: state.players.map((p, i) =>
-          i === 0 ? { ...p, party: { ...p.party, summoner: 13 } } : p
+          i === 0 ? { ...p, party: { ...p.party, wizard: 13 } } : p
         ),
       };
       const legal = getLegalActions(stateWithSummonerAndPile);
@@ -47,7 +47,7 @@ describe('validation', () => {
         ...state,
         eventPile: [],
         players: state.players.map((p, i) =>
-          i === 0 ? { ...p, party: { ...p.party, summoner: 13 } } : p
+          i === 0 ? { ...p, party: { ...p.party, wizard: 13 } } : p
         ),
       };
       const legal = getLegalActions(stateWithSummoner);
