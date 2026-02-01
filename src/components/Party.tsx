@@ -16,9 +16,11 @@ interface PartyProps {
   playerName: string;
   /** If true, this is the current player */
   isCurrent?: boolean;
+  /** Click a card in the party to zoom (show larger). */
+  onZoomCard?: (cardId: number) => void;
 }
 
-export default function PartyDisplay({ party, playerName, isCurrent }: PartyProps) {
+export default function PartyDisplay({ party, playerName, isCurrent, onZoomCard }: PartyProps) {
   return (
     <div className={`party ${isCurrent ? 'party--current' : ''}`}>
       <h3 className="party__title">{playerName}&apos;s Party</h3>
@@ -27,7 +29,11 @@ export default function PartyDisplay({ party, playerName, isCurrent }: PartyProp
           <div key={key} className="party__slot">
             <span className="party__slot-label">{label}</span>
             {party[key] !== null ? (
-              <Card cardId={party[key]!} className="party__card" />
+              <Card
+                cardId={party[key]!}
+                className="party__card"
+                onClick={onZoomCard ? () => onZoomCard(party[key]!) : undefined}
+              />
             ) : (
               <div className="party__empty" aria-label={`Empty ${label} slot`} />
             )}

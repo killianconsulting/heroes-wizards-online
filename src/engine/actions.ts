@@ -9,7 +9,7 @@ import type { HeroType } from '@/data/constants';
 import type { GameState, Party } from './state';
 import type { CardId } from './state';
 import { canPlayQuest } from './validation';
-import { resolveEvent, advanceTurn, maybeAdvanceTurn, type EventTarget } from './events';
+import { resolveEvent, advanceTurn, type EventTarget } from './events';
 
 /** Party slot key for hero type (Knight -> knight, etc.) */
 const HERO_PARTY_KEY: Record<HeroType, keyof Party> = {
@@ -18,6 +18,19 @@ const HERO_PARTY_KEY: Record<HeroType, keyof Party> = {
   Barbarian: 'barbarian',
   Thief: 'thief',
 };
+
+/** After playing a card: Stargazer gets second play; others must pass. */
+function afterPlay(state: GameState): GameState {
+  const current = state.players[state.currentPlayerIndex];
+  const hasStargazer =
+    current.party.wizard !== null &&
+    isWizardCard(getCard(current.party.wizard)) &&
+    getCard(current.party.wizard).wizardType === 'Stargazer';
+  if (hasStargazer && !state.stargazerSecondPlayUsed) {
+    return { ...state, stargazerSecondPlayUsed: true };
+  }
+  return { ...state, actedThisTurn: true };
+}
 
 /**
  * Draw one card from the deck into the current player's hand.
@@ -42,6 +55,7 @@ export function drawCard(state: GameState): GameState {
     deck: restDeck,
     players,
     drewThisTurn: true,
+    actedThisTurn: true,
   };
 }
 
@@ -51,6 +65,22 @@ export function drawCard(state: GameState): GameState {
 export function passTurn(state: GameState): GameState {
   if (state.phase !== 'chooseAction' || state.winnerPlayerId) return state;
   return advanceTurn(state);
+}
+
+/**
+ * Dismiss Fortune Reading modal after player has viewed other players' hands.
+ */
+export function dismissFortuneReading(state: GameState): GameState {
+  if (!state.pendingFortuneReading) return state;
+  return { ...state, pendingFortuneReading: false };
+}
+
+/**
+ * Dismiss the "event blocked" notification (e.g. after Healer blocked a steal).
+ */
+export function dismissEventBlocked(state: GameState): GameState {
+  if (!state.eventBlocked) return state;
+  return { ...state, eventBlocked: undefined };
 }
 
 /**
@@ -87,7 +117,7 @@ export function playCard(
         : p
     );
 
-    return maybeAdvanceTurn({ ...state, players });
+    return afterPlay({ ...state, players });
   }
 
   if (isWizardCard(card)) {
@@ -101,7 +131,7 @@ export function playCard(
         : p
     );
 
-    return maybeAdvanceTurn({ ...state, players });
+    return afterPlay({ ...state, players });
   }
 
   if (isQuestCard(card)) {
@@ -130,14 +160,15 @@ export function playCard(
       players,
       eventPile,
     };
-    return resolveEvent(stateAfterPlay, cardId, target);
+    const stateAfterEvent = resolveEvent(stateAfterPlay, cardId, target);
+    return afterPlay(stateAfterEvent);
   }
 
   return state;
 }
 
 /**
- * Dump a non-event card from hand to the event pile, then advance turn.
+ * Dump a non-event card from hand to the event pile. Player must Pass Turn to end turn.
  * Caller should ensure card is not an event (getLegalActions enforces).
  */
 export function dumpCard(state: GameState, cardId: CardId): GameState {
@@ -158,16 +189,17 @@ export function dumpCard(state: GameState, cardId: CardId): GameState {
     i === currentIndex ? { ...p, hand: newHand } : p
   );
 
-  return advanceTurn({
+  return {
     ...state,
     players,
     eventPile,
-  });
+    actedThisTurn: true,
+  };
 }
 
 /**
  * Summoner: "As a turn, you can draw any one card from the event pile."
- * Takes the chosen card from the event pile into the current player's hand, then advances turn.
+ * Takes the chosen card from the event pile into the current player's hand. Player must Pass Turn to end turn.
  * Caller should ensure getLegalActions(state).canSummonFromPile is true and cardId is in state.eventPile.
  */
 export function summonFromEventPile(state: GameState, cardId: CardId): GameState {
@@ -188,9 +220,10 @@ export function summonFromEventPile(state: GameState, cardId: CardId): GameState
     i === currentIndex ? { ...p, hand: newHand } : p
   );
 
-  return advanceTurn({
+  return {
     ...state,
     players,
     eventPile: newEventPile,
-  });
+    actedThisTurn: true,
+  };
 }

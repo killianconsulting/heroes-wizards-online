@@ -100,11 +100,27 @@ export function getLegalActions(state: GameState): LegalActions {
     };
   }
 
+  /** After playing/dumping/summoning, only Pass turn is allowed. */
+  if (state.actedThisTurn) {
+    return {
+      canDraw: false,
+      canDump: false,
+      playableCardIds: [],
+      canPlayEagles: false,
+      canSummonFromPile: false,
+      canPassTurn: true,
+    };
+  }
+
   const current = state.players[state.currentPlayerIndex];
   const handSize = current.hand.length;
 
-  /** One draw per turn; after drawing, use Pass turn to end */
-  const canDraw = handSize < MAX_HAND_SIZE && !state.drewThisTurn;
+  /** One draw per turn, and only before any play/dump/summon (draw is not the same as play). */
+  const canDraw =
+    handSize < MAX_HAND_SIZE &&
+    !state.drewThisTurn &&
+    !state.actedThisTurn &&
+    !(state.stargazerSecondPlayUsed ?? false);
 
   for (const cardId of current.hand) {
     const card = getCard(cardId);
@@ -138,7 +154,12 @@ export function getLegalActions(state: GameState): LegalActions {
     getCard(current.party.wizard).wizardType === 'Summoner';
   const canSummonFromPile = hasSummoner && state.eventPile.length > 0;
 
-  const canPassTurn = true;
+  /** Pass is allowed after draw/play/dump/summon this turn, or when there is no other option (empty hand and empty deck). */
+  const canPassTurn =
+    state.drewThisTurn === true ||
+    state.actedThisTurn === true ||
+    (state.stargazerSecondPlayUsed ?? false) ||
+    (current.hand.length === 0 && state.deck.length === 0);
 
   return {
     canDraw,

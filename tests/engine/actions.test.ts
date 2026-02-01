@@ -20,6 +20,7 @@ describe('actions', () => {
       expect(next.players[0].hand).toContain(topCard);
       expect(next.currentPlayerIndex).toBe(0);
       expect(next.drewThisTurn).toBe(true);
+      expect(next.actedThisTurn).toBe(true);
     });
 
     it('does not mutate original state', () => {
@@ -44,11 +45,12 @@ describe('actions', () => {
 
       expect(next.currentPlayerIndex).toBe(1);
       expect(next.drewThisTurn).toBeUndefined();
+      expect(next.actedThisTurn).toBeUndefined();
     });
   });
 
   describe('playCard', () => {
-    it('plays a hero into party and advances turn', () => {
+    it('plays a hero into party and does not advance turn (player must pass)', () => {
       const heroCardId = 48;
       const state = createGame(['Alice', 'Bob']);
       const deckWithoutHero = state.deck.filter((id) => id !== heroCardId);
@@ -75,7 +77,8 @@ describe('actions', () => {
 
       expect(next.players[0].hand).not.toContain(heroCardId);
       expect(next.players[0].party[slot]).toBe(heroCardId);
-      expect(next.currentPlayerIndex).toBe(1);
+      expect(next.currentPlayerIndex).toBe(0);
+      expect(next.actedThisTurn).toBe(true);
     });
 
     it('playing quest with 6+ matching skills sets winner and ends game', () => {
@@ -141,7 +144,7 @@ describe('actions', () => {
   });
 
   describe('summonFromEventPile', () => {
-    it('takes chosen card from event pile into hand and advances turn', () => {
+    it('takes chosen card from event pile into hand and does not advance turn (player must pass)', () => {
       const cardId = 16;
       const summonerId = 13;
       const state = createGame(['Alice', 'Bob']);
@@ -184,7 +187,8 @@ describe('actions', () => {
       expect(next.players[0].hand).toHaveLength(handLen - 1);
       expect(next.eventPile).toContain(dumpableId);
       expect(next.eventPile).toHaveLength(pileLen + 1);
-      expect(next.currentPlayerIndex).toBe(1);
+      expect(next.currentPlayerIndex).toBe(0);
+      expect(next.actedThisTurn).toBe(true);
     });
 
     it('does nothing if card is event', () => {

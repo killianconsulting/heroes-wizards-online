@@ -32,7 +32,7 @@ describe('events', () => {
 
       expect(next.players[0].party.archer).toBe(archerId);
       expect(next.players[1].party.archer).toBe(null);
-      expect(next.currentPlayerIndex).toBe(1);
+      expect(next.currentPlayerIndex).toBe(0);
     });
 
     it('archery_contest has no effect when target has Healer', () => {
@@ -54,7 +54,7 @@ describe('events', () => {
 
       expect(next.players[0].party.archer).toBe(null);
       expect(next.players[1].party.archer).toBe(archerId);
-      expect(next.currentPlayerIndex).toBe(1);
+      expect(next.currentPlayerIndex).toBe(0);
     });
 
     it('feast_east rotates hands to the right', () => {
@@ -66,7 +66,7 @@ describe('events', () => {
 
       expect(next.players[0].hand).toEqual(bobHand);
       expect(next.players[1].hand).toEqual(aliceHand);
-      expect(next.currentPlayerIndex).toBe(1);
+      expect(next.currentPlayerIndex).toBe(0);
     });
 
     it('feast_west rotates hands to the left', () => {
@@ -96,7 +96,7 @@ describe('events', () => {
       expect(next.players[0].hand).toHaveLength(aliceHandLen + 1);
       expect(next.players[1].hand).not.toContain(cardToSteal);
       expect(next.players[1].hand).toHaveLength(bobHandLen - 1);
-      expect(next.currentPlayerIndex).toBe(1);
+      expect(next.currentPlayerIndex).toBe(0);
     });
 
     it('wizard_tower_repairs sends wizard from target party to event pile', () => {
@@ -125,10 +125,10 @@ describe('events', () => {
       expect(next.winnerPlayerId).toBe(state.players[0].id);
     });
 
-    it('fortune_reading just advances turn', () => {
+    it('fortune_reading does not advance turn (no state change)', () => {
       const state = createGame(['Alice', 'Bob']);
       const next = resolveEvent(state, 21);
-      expect(next.currentPlayerIndex).toBe(1);
+      expect(next.currentPlayerIndex).toBe(0);
       expect(next.players[0].hand).toEqual(state.players[0].hand);
     });
   });

@@ -7,13 +7,20 @@ interface EventPileProps {
   /** Callback when user picks a card (e.g. Summoner) */
   onPickCard?: (cardId: number) => void;
   pickable?: boolean;
+  /** Click the top card to zoom when not pickable. */
+  onZoomCard?: (cardId: number) => void;
 }
 
-export default function EventPile({ cardIds, onPickCard, pickable = false }: EventPileProps) {
+export default function EventPile({
+  cardIds,
+  onPickCard,
+  pickable = false,
+  onZoomCard,
+}: EventPileProps) {
   if (cardIds.length === 0) {
     return (
       <div className="event-pile event-pile--empty">
-        <span className="event-pile__label">Event pile</span>
+        <span className="event-pile__label">Event Pile</span>
         <span className="event-pile__count">0</span>
       </div>
     );
@@ -23,7 +30,7 @@ export default function EventPile({ cardIds, onPickCard, pickable = false }: Eve
 
   return (
     <div className="event-pile">
-      <span className="event-pile__label">Event pile</span>
+      <span className="event-pile__label">Event Pile</span>
       <div className="event-pile__cards">
         {pickable && cardIds.length > 0 ? (
           cardIds.map((id) => (
@@ -35,7 +42,11 @@ export default function EventPile({ cardIds, onPickCard, pickable = false }: Eve
             />
           ))
         ) : (
-          <Card cardId={topCard} className="event-pile__top" />
+          <Card
+            cardId={topCard}
+            className="event-pile__top"
+            onClick={onZoomCard ? () => onZoomCard(topCard) : undefined}
+          />
         )}
       </div>
       <span className="event-pile__count">{cardIds.length}</span>

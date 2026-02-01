@@ -48,4 +48,10 @@ export interface GameState {
   stargazerSecondPlayUsed?: boolean;
   /** After drawing a card, player can look at hand then pass turn (one draw per turn). */
   drewThisTurn?: boolean;
+  /** After playing/dumping/summoning, only Pass turn is allowed until they pass. */
+  actedThisTurn?: boolean;
+  /** Fortune Reading: player is viewing other players' hands until they click OK. */
+  pendingFortuneReading?: boolean;
+  /** Event was played but effect blocked (e.g. Healer); show notification until dismissed. */
+  eventBlocked?: { message: string; targetPlayerName?: string };
 }

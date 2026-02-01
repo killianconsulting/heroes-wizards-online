@@ -1,5 +1,6 @@
 'use client';
 
+import { getCard } from '@/data/cards';
 import type { LegalActions } from '@/engine/validation';
 
 interface ActionBarProps {
@@ -12,6 +13,8 @@ interface ActionBarProps {
   onSummon: (cardId: number) => void;
   /** When true, playing a card will require target selection (handled by parent) */
   isCurrentTurn: boolean;
+  /** When true, only Pass turn is available (show "No more actions available.") */
+  onlyPassAvailable?: boolean;
 }
 
 export default function ActionBar({
@@ -23,6 +26,7 @@ export default function ActionBar({
   onDump,
   onSummon,
   isCurrentTurn,
+  onlyPassAvailable = false,
 }: ActionBarProps) {
   if (!isCurrentTurn) {
     return (
@@ -35,49 +39,62 @@ export default function ActionBar({
   const canPlaySelected =
     selectedCardId !== null && legal.playableCardIds.includes(selectedCardId);
   const canDumpSelected =
-    selectedCardId !== null && legal.canDump && !legal.playableCardIds.includes(selectedCardId);
+    selectedCardId !== null &&
+    getCard(selectedCardId).type !== 'event' &&
+    legal.canDump;
+
+  const hintText = onlyPassAvailable
+    ? 'No more actions available.'
+    : legal.canDraw
+      ? legal.canDump
+        ? 'Available actions: Draw Card, Play Card, or Dump Card.'
+        : 'Available actions: Draw Card or Play Card.'
+      : legal.canPassTurn
+        ? 'Available actions: Play Card or Pass Turn.'
+        : legal.canDump
+          ? 'Available actions: Play Card or Dump Card.'
+          : 'Available actions: Play Card.';
 
   return (
     <div className="action-bar">
-      {legal.canDraw && (
-        <button type="button" onClick={onDraw} className="action-bar__btn action-bar__btn--draw">
-          Draw card
-        </button>
-      )}
+      <div className="action-bar__left">
+        {legal.canDraw && (
+          <button type="button" onClick={onDraw} className="action-bar__btn action-bar__btn--draw">
+            Draw Card
+          </button>
+        )}
 
-      {legal.canPassTurn && (
-        <button type="button" onClick={onPassTurn} className="action-bar__btn action-bar__btn--pass">
-          Pass turn
-        </button>
-      )}
+        {canPlaySelected && (
+          <button
+            type="button"
+            onClick={() => selectedCardId !== null && onPlay(selectedCardId)}
+            className="action-bar__btn action-bar__btn--play"
+          >
+            Play Card
+          </button>
+        )}
 
-      {legal.canSummonFromPile && (
-        <p className="action-bar__hint">Use &quot;Summon from pile&quot; below to take from event pile.</p>
-      )}
+        {canDumpSelected && (
+          <button
+            type="button"
+            onClick={() => selectedCardId !== null && onDump(selectedCardId)}
+            className="action-bar__btn action-bar__btn--dump"
+          >
+            Dump Card
+          </button>
+        )}
 
-      {canPlaySelected && (
-        <button
-          type="button"
-          onClick={() => selectedCardId !== null && onPlay(selectedCardId)}
-          className="action-bar__btn action-bar__btn--play"
-        >
-          Play card
-        </button>
-      )}
+        <p className="action-bar__hint">{hintText}</p>
+      </div>
 
-      {canDumpSelected && (
-        <button
-          type="button"
-          onClick={() => selectedCardId !== null && onDump(selectedCardId)}
-          className="action-bar__btn action-bar__btn--dump"
-        >
-          Dump card
-        </button>
-      )}
-
-      {!legal.canDraw && !canPlaySelected && !canDumpSelected && !legal.canSummonFromPile && (
-        <p className="action-bar__hint">Select a card to play or dump, draw if hand &lt; 5, or pass turn.</p>
-      )}
+      <button
+        type="button"
+        onClick={onPassTurn}
+        className="action-bar__btn action-bar__btn--pass"
+        disabled={!legal.canPassTurn}
+      >
+        Pass Turn
+      </button>
     </div>
   );
 }

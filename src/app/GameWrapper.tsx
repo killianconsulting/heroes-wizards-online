@@ -16,6 +16,8 @@ export default function GameWrapper() {
     handlePlayCard,
     handleDumpCard,
     handleSummonFromPile,
+    handleDismissFortuneReading,
+    handleDismissEventBlocked,
   } = useGameState();
 
   if (!state) {
@@ -41,6 +43,8 @@ export default function GameWrapper() {
       onPlayCard={handlePlayCard}
       onDumpCard={handleDumpCard}
       onSummonFromPile={handleSummonFromPile}
+      onDismissFortuneReading={handleDismissFortuneReading}
+      onDismissEventBlocked={handleDismissEventBlocked}
     />
   );
 }

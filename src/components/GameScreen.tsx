@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { getCard } from '@/data/cards';
 import { isEventCard } from '@/data/types';
 import type { GameState } from '@/engine/state';
@@ -13,6 +13,9 @@ import PartyDisplay from './Party';
 import Hand from './Hand';
 import ActionBar from './ActionBar';
 import TargetSelector from './TargetSelector';
+import CardZoomModal from './CardZoomModal';
+import FortuneReadingModal from './FortuneReadingModal';
+import EventBlockedNotification from './EventBlockedNotification';
 
 interface GameScreenProps {
   state: GameState;
@@ -22,6 +25,8 @@ interface GameScreenProps {
   onPlayCard: (cardId: number, target?: EventTarget) => void;
   onDumpCard: (cardId: number) => void;
   onSummonFromPile: (cardId: number) => void;
+  onDismissFortuneReading: () => void;
+  onDismissEventBlocked: () => void;
 }
 
 export default function GameScreen({
@@ -32,14 +37,28 @@ export default function GameScreen({
   onPlayCard,
   onDumpCard,
   onSummonFromPile,
+  onDismissFortuneReading,
 }: GameScreenProps) {
   const [selectedCardId, setSelectedCardId] = useState<number | null>(null);
   const [pendingEvent, setPendingEvent] = useState<{ cardId: number; eventId: EventId } | null>(
     null
   );
+  const [zoomedCard, setZoomedCard] = useState<{ cardId: number; faceDown?: boolean } | null>(
+    null
+  );
 
   const currentIndex = state.currentPlayerIndex;
   const currentPlayer = state.players[currentIndex];
+
+  /** Clear selection when the selected card is no longer in the current player's hand (e.g. after turn/hand change). */
+  useEffect(() => {
+    if (
+      selectedCardId !== null &&
+      !currentPlayer.hand.includes(selectedCardId)
+    ) {
+      setSelectedCardId(null);
+    }
+  }, [state.currentPlayerIndex, currentPlayer.hand, selectedCardId]);
 
   const handlePlayClick = useCallback(() => {
     if (selectedCardId === null || !legalActions.playableCardIds.includes(selectedCardId)) return;
@@ -68,10 +87,29 @@ export default function GameScreen({
 
   return (
     <main className="game-screen">
+      {zoomedCard && (
+        <CardZoomModal
+          cardId={zoomedCard.cardId}
+          faceDown={zoomedCard.faceDown}
+          onClose={() => setZoomedCard(null)}
+        />
+      )}
+      {state.pendingFortuneReading && (
+        <FortuneReadingModal
+          state={state}
+          onDismiss={onDismissFortuneReading}
+        />
+      )}
+      {state.eventBlocked && (
+        <EventBlockedNotification
+          message={state.eventBlocked.message}
+          onDismiss={onDismissEventBlocked}
+        />
+      )}
       <header className="game-header">
         <h1 className="game-title">Heroes & Wizards</h1>
         <p className="game-turn">
-          {currentPlayer.name}&apos;s turn
+          {currentPlayer.name}&apos;s Turn
           {state.stargazerSecondPlayUsed && ' (second play)'}
         </p>
       </header>
@@ -90,12 +128,25 @@ export default function GameScreen({
         <>
           <section className="game-table">
             <div className="game-table__center">
-              <Deck count={state.deck.length} />
-              <EventPile
-                cardIds={state.eventPile}
-                onPickCard={legalActions?.canSummonFromPile ? onSummonFromPile : undefined}
-                pickable={!!legalActions?.canSummonFromPile}
+              <Deck
+                count={state.deck.length}
+                canDraw={legalActions?.canDraw ?? false}
+                onDraw={onDraw}
+                onZoomCard={(id, faceDown) => setZoomedCard({ cardId: id, faceDown })}
               />
+              <div className="game-table__event-area">
+                {legalActions?.canSummonFromPile && (
+                  <p className="event-pile-hint">
+                    Use Summoner to draw a card from the Event Pile.
+                  </p>
+                )}
+                <EventPile
+                  cardIds={state.eventPile}
+                  onPickCard={legalActions?.canSummonFromPile ? onSummonFromPile : undefined}
+                  pickable={!!legalActions?.canSummonFromPile}
+                  onZoomCard={(id) => setZoomedCard({ cardId: id })}
+                />
+              </div>
             </div>
 
             <div className="game-table__parties">
@@ -105,13 +156,14 @@ export default function GameScreen({
                   party={p.party}
                   playerName={p.name}
                   isCurrent={i === currentIndex}
+                  onZoomCard={(id) => setZoomedCard({ cardId: id })}
                 />
               ))}
             </div>
           </section>
 
           <section className="game-hand">
-            <h2 className="game-hand__title">{currentPlayer.name}&apos;s hand</h2>
+            <h2 className="game-hand__title">{currentPlayer.name}&apos;s Hand</h2>
             <Hand
               cardIds={currentPlayer.hand}
               selectedCardId={selectedCardId}
@@ -130,6 +182,7 @@ export default function GameScreen({
               onDump={onDumpCard}
               onSummon={onSummonFromPile}
               isCurrentTurn={true}
+              onlyPassAvailable={state.actedThisTurn}
             />
           </section>
         </>

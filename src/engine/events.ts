@@ -49,7 +49,7 @@ export function maybeAdvanceTurn(state: GameState): GameState {
 
 /**
  * Swap a hero slot between current player and target player.
- * If target has Healer, no effect (Healer blocks steal).
+ * If target has Healer, no effect (Healer blocks steal); set eventBlocked for UI notification.
  */
 function swapHeroSlot(
   state: GameState,
@@ -57,13 +57,22 @@ function swapHeroSlot(
   targetPlayerIndex: number
 ): GameState {
   const currentIndex = state.currentPlayerIndex;
-  if (targetPlayerIndex === currentIndex) return maybeAdvanceTurn(state);
+  if (targetPlayerIndex === currentIndex) return state;
 
   const targetParty = state.players[targetPlayerIndex].party;
-  if (hasHealer(targetParty)) return maybeAdvanceTurn(state);
+  const targetPlayerName = state.players[targetPlayerIndex].name;
+  if (hasHealer(targetParty)) {
+    return {
+      ...state,
+      eventBlocked: {
+        message: `${targetPlayerName}'s Healer blocks the steal! Their party is protected.`,
+        targetPlayerName,
+      },
+    };
+  }
 
   const targetCard = targetParty[slotKey];
-  if (targetCard === null) return maybeAdvanceTurn(state);
+  if (targetCard === null) return state;
 
   const currentParty = state.players[currentIndex].party;
   const ourCard = currentParty[slotKey];
@@ -78,7 +87,7 @@ function swapHeroSlot(
     return p;
   });
 
-  return maybeAdvanceTurn({ ...state, players: newPlayers });
+  return ({ ...state, players: newPlayers });
 }
 
 /**
@@ -87,10 +96,10 @@ function swapHeroSlot(
  */
 function swapWizardSlot(state: GameState, targetPlayerIndex: number): GameState {
   const currentIndex = state.currentPlayerIndex;
-  if (targetPlayerIndex === currentIndex) return maybeAdvanceTurn(state);
+  if (targetPlayerIndex === currentIndex) return state;
 
   const targetCard = state.players[targetPlayerIndex].party.wizard;
-  if (targetCard === null) return maybeAdvanceTurn(state);
+  if (targetCard === null) return state;
 
   const ourCard = state.players[currentIndex].party.wizard;
 
@@ -104,7 +113,7 @@ function swapWizardSlot(state: GameState, targetPlayerIndex: number): GameState 
     return p;
   });
 
-  return maybeAdvanceTurn({ ...state, players: newPlayers });
+  return ({ ...state, players: newPlayers });
 }
 
 /**
@@ -131,41 +140,37 @@ export function resolveEvent(
     case 'archery_contest': {
       const targetIndex = target?.playerIndex;
       if (targetIndex === undefined || targetIndex < 0 || targetIndex >= n)
-        return maybeAdvanceTurn(state);
+        return state;
       return swapHeroSlot(state, 'archer', targetIndex);
     }
 
     case 'royal_invitation': {
       const targetIndex = target?.playerIndex;
       if (targetIndex === undefined || targetIndex < 0 || targetIndex >= n)
-        return maybeAdvanceTurn(state);
+        return state;
       return swapHeroSlot(state, 'knight', targetIndex);
     }
 
     case 'tavern_brawl': {
       const targetIndex = target?.playerIndex;
       if (targetIndex === undefined || targetIndex < 0 || targetIndex >= n)
-        return maybeAdvanceTurn(state);
+        return state;
       return swapHeroSlot(state, 'barbarian', targetIndex);
     }
 
     case 'unguarded_treasure': {
       const targetIndex = target?.playerIndex;
       if (targetIndex === undefined || targetIndex < 0 || targetIndex >= n)
-        return maybeAdvanceTurn(state);
+        return state;
       return swapHeroSlot(state, 'thief', targetIndex);
     }
 
     case 'spell_of_summoning': {
       const targetIndex = target?.playerIndex;
-      const wizardCardId = target?.cardId;
       if (targetIndex === undefined || targetIndex < 0 || targetIndex >= n)
-        return maybeAdvanceTurn(state);
-      if (wizardCardId === undefined) return maybeAdvanceTurn(state);
-      const wizardCard = getCard(wizardCardId);
-      if (!isWizardCard(wizardCard)) return maybeAdvanceTurn(state);
-      const slotKey = WIZARD_PARTY_KEY[wizardCard.wizardType];
-      return swapWizardSlot(state, slotKey, targetIndex);
+        return state;
+      /* Only need target player (one wizard slot per party). Healer does not block wizard steals. */
+      return swapWizardSlot(state, targetIndex);
     }
 
     case 'feast_east': {
@@ -175,7 +180,7 @@ export function resolveEvent(
         ...p,
         hand: newHands[i],
       }));
-      return maybeAdvanceTurn({ ...state, players: newPlayers });
+      return ({ ...state, players: newPlayers });
     }
 
     case 'feast_west': {
@@ -185,20 +190,20 @@ export function resolveEvent(
         ...p,
         hand: newHands[i],
       }));
-      return maybeAdvanceTurn({ ...state, players: newPlayers });
+      return ({ ...state, players: newPlayers });
     }
 
     case 'fortune_reading':
-      return maybeAdvanceTurn(state);
+      return { ...state, pendingFortuneReading: true };
 
     case 'hunting_expedition': {
       const targetIndex = target?.playerIndex;
       const cardToSteal = target?.cardId;
       if (targetIndex === undefined || targetIndex < 0 || targetIndex >= n)
-        return maybeAdvanceTurn(state);
-      if (cardToSteal === undefined) return maybeAdvanceTurn(state);
+        return state;
+      if (cardToSteal === undefined) return state;
       const targetHand = state.players[targetIndex].hand;
-      if (!targetHand.includes(cardToSteal)) return maybeAdvanceTurn(state);
+      if (!targetHand.includes(cardToSteal)) return state;
 
       const newHandTarget = targetHand.filter((id) => id !== cardToSteal);
       const newHandCurrent = [...state.players[currentIndex].hand, cardToSteal];
@@ -208,23 +213,23 @@ export function resolveEvent(
         if (i === targetIndex) return { ...p, hand: newHandTarget };
         return p;
       });
-      return maybeAdvanceTurn({ ...state, players: newPlayers });
+      return ({ ...state, players: newPlayers });
     }
 
     case 'wizard_tower_repairs': {
       const targetIndex = target?.playerIndex;
       if (targetIndex === undefined || targetIndex < 0 || targetIndex >= n)
-        return maybeAdvanceTurn(state);
+        return state;
       const targetParty = state.players[targetIndex].party;
       const wizardInParty = targetParty.wizard;
-      if (wizardInParty === null) return maybeAdvanceTurn(state);
+      if (wizardInParty === null) return state;
 
       const newParty = { ...targetParty, wizard: null };
       const newEventPile = [...state.eventPile, wizardInParty];
       const newPlayers = state.players.map((p, i) =>
         i === targetIndex ? { ...p, party: newParty } : p
       );
-      return maybeAdvanceTurn({
+      return ({
         ...state,
         players: newPlayers,
         eventPile: newEventPile,
@@ -232,7 +237,7 @@ export function resolveEvent(
     }
 
     default:
-      return maybeAdvanceTurn(state);
+      return state;
   }
 }
 
@@ -244,5 +249,7 @@ export function advanceTurn(state: GameState): GameState {
     currentPlayerIndex: nextIndex,
     stargazerSecondPlayUsed: undefined,
     drewThisTurn: undefined,
+    actedThisTurn: undefined,
+    eventBlocked: undefined,
   };
 }
