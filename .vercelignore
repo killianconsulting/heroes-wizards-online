@@ -1,0 +1,16 @@
+# Exclude build output
+.next/
+.next/**
+/.next/
+
+# Exclude other build artifacts
+out/
+build/
+dist/
+
+# Exclude dependencies
+node_modules/
+
+# Exclude local files
+.env*.local
+.DS_Store

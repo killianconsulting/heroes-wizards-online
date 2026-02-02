@@ -152,16 +152,16 @@ export function getLegalActions(state: GameState): LegalActions {
       return card.type !== 'event';
     });
 
+  const wizardCard = current.party.wizard !== null ? getCard(current.party.wizard) : null;
   const hasSummoner =
-    current.party.wizard !== null &&
-    isWizardCard(getCard(current.party.wizard)) &&
-    getCard(current.party.wizard).wizardType === 'Summoner';
+    wizardCard !== null &&
+    isWizardCard(wizardCard) &&
+    wizardCard.wizardType === 'Summoner';
   const canSummonFromPile = hasSummoner && state.eventPile.length > 0;
 
   /** Pass is allowed after draw/play/dump/summon this turn, or when there is no other option (empty hand and empty deck). */
   const canPassTurn =
     state.drewThisTurn === true ||
-    state.actedThisTurn === true ||
     (state.stargazerSecondPlayUsed ?? false) ||
     (current.hand.length === 0 && state.deck.length === 0);
 

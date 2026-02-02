@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, Suspense } from 'react';
 import { useGameState } from '@/hooks/useGameState';
 import { useLeaveGame } from '@/context/LeaveGameContext';
 import StartScreen from '@/components/StartScreen';
@@ -30,7 +30,11 @@ export default function GameWrapper() {
   }, [inGame, reset, registerLeaveGame]);
 
   if (!state) {
-    return <StartScreen onStart={startGame} />;
+    return (
+      <Suspense fallback={<div className="start-screen">Loading...</div>}>
+        <StartScreen onStart={startGame} />
+      </Suspense>
+    );
   }
 
   if (state.winnerPlayerId) {
