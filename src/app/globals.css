@@ -312,24 +312,13 @@ body {
   filter: brightness(1.1);
 }
 
-.start-choice__btn--online {
-  background: var(--surface);
-  color: var(--text-muted);
-  cursor: not-allowed;
-  opacity: 0.7;
+.start-choice__btn--online-active {
+  background: var(--accent-wizard);
+  color: white;
 }
 
-.start-choice__option {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.35rem;
-}
-
-.start-choice__coming-soon {
-  font-size: 0.8rem;
-  color: var(--text-muted);
-  font-style: italic;
+.start-choice__btn--online-active:hover {
+  filter: brightness(1.1);
 }
 
 .start-change-mode {
@@ -349,6 +338,267 @@ body {
 
 .start-change-mode:hover {
   filter: brightness(1.1);
+}
+
+/* ----- Online setup (Join / Create lobby) ----- */
+.online-setup {
+  max-width: 28rem;
+}
+
+.online-setup__sections {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  margin-top: 1rem;
+}
+
+.online-setup__section {
+  text-align: left;
+  padding: 1.25rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+}
+
+.online-setup__heading {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 0 0 1rem 0;
+  color: var(--highlight);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.online-setup__form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.online-setup__label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.online-setup__input {
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: var(--bg-dark);
+  color: var(--text);
+  font-size: 1rem;
+}
+
+.online-setup__input::placeholder {
+  color: var(--text-muted);
+}
+
+.online-setup__error {
+  font-size: 0.85rem;
+  color: #e57373;
+  margin: 0;
+}
+
+.online-setup__btn {
+  padding: 0.65rem 1.25rem;
+  font-size: 1rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  margin-top: 0.25rem;
+  font-family: var(--font-heading), sans-serif;
+}
+
+.online-setup__btn--join {
+  background: var(--accent-wizard);
+  color: white;
+}
+
+.online-setup__btn--join:hover {
+  filter: brightness(1.1);
+}
+
+.online-setup__btn--create {
+  background: var(--accent-quest);
+  color: white;
+}
+
+.online-setup__btn--create:hover {
+  filter: brightness(1.1);
+}
+
+/* ----- Lobby screen ----- */
+.lobby-screen {
+  max-width: 32rem;
+}
+
+.lobby-screen__code {
+  margin: 1rem 0 0.5rem;
+  font-size: 1.1rem;
+}
+
+.lobby-screen__code-label {
+  color: var(--text-muted);
+  margin-right: 0.5rem;
+}
+
+.lobby-screen__code-value {
+  font-weight: 700;
+  font-size: 1.5rem;
+  letter-spacing: 0.15em;
+  color: var(--highlight);
+}
+
+.lobby-screen__invite-text {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  margin: 0 0 0.5rem;
+}
+
+.lobby-screen__invite-row {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.lobby-screen__invite-input {
+  flex: 1;
+  min-width: 0;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: var(--surface);
+  color: var(--text);
+}
+
+.lobby-screen__copy-btn {
+  flex-shrink: 0;
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  background: var(--accent-quest);
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  cursor: pointer;
+}
+
+.lobby-screen__copy-btn:hover {
+  filter: brightness(1.1);
+}
+
+.lobby-screen__copy-btn[aria-pressed="true"] {
+  background: var(--accent-event);
+}
+
+.lobby-screen__players-wrap {
+  margin-bottom: 1.5rem;
+}
+
+.lobby-screen__players-heading {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin: 0 0 0.75rem 0;
+  color: var(--text);
+}
+
+.lobby-screen__players {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.lobby-screen__player-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.75rem 1rem;
+  min-width: 6rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  border-color: var(--highlight);
+}
+
+.lobby-screen__player-avatar {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 0.4rem;
+  background: var(--bg-table);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent-wizard);
+}
+
+.lobby-screen__player-avatar svg {
+  width: 1.75rem;
+  height: 1.75rem;
+}
+
+.lobby-screen__player-name {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text);
+  text-align: center;
+}
+
+.lobby-screen__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: center;
+}
+
+.lobby-screen__btn {
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  font-family: var(--font-heading), sans-serif;
+}
+
+.lobby-screen__btn--start {
+  background: var(--accent-quest);
+  color: white;
+}
+
+.lobby-screen__btn--start:hover:not(:disabled) {
+  filter: brightness(1.1);
+}
+
+.lobby-screen__btn--start:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.lobby-screen__btn--leave {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+.lobby-screen__btn--leave:hover {
+  background: var(--border);
+}
+
+.lobby-screen__hint {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  margin-top: 1rem;
+  text-align: center;
 }
 
 .start-form {

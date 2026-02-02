@@ -6,18 +6,31 @@ import GameLogo from './GameLogo';
 import { MIN_PLAYERS, MAX_PLAYERS } from '@/data/constants';
 import { getRandomThemedName } from '@/utils/themedNames';
 import PlayerAvatarIcon from './PlayerAvatarIcon';
+import OnlineSetupScreen from './OnlineSetupScreen';
+import LobbyScreen from './LobbyScreen';
+import { useLobby } from '@/context/LobbyContext';
 
 interface StartScreenProps {
   onStart: (playerNames: string[]) => void;
 }
 
-type StartView = 'choice' | 'local';
+type StartView = 'choice' | 'local' | 'online';
 
 export default function StartScreen({ onStart }: StartScreenProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { lobby } = useLobby();
   const mode = searchParams.get('mode');
-  const view: StartView = mode === 'local' ? 'local' : 'choice';
+  const lobbyCodeFromUrl = searchParams.get('lobby');
+
+  const view: StartView =
+    mode === 'local' ? 'local' : mode === 'online' ? 'online' : 'choice';
+
+  const showLobbyScreen =
+    view === 'online' &&
+    lobbyCodeFromUrl &&
+    lobby &&
+    lobby.lobbyCode === lobbyCodeFromUrl;
   const [playerCount, setPlayerCount] = useState(MIN_PLAYERS);
   const [names, setNames] = useState<string[]>(
     Array.from({ length: MIN_PLAYERS }, (_, i) => `Player ${i + 1}`)
@@ -54,21 +67,24 @@ export default function StartScreen({ onStart }: StartScreenProps) {
             >
               Local
             </button>
-            <div className="start-choice__option">
-              <button
-                type="button"
-                disabled
-                className="start-choice__btn start-choice__btn--online"
-                aria-disabled="true"
-              >
-                Online
-              </button>
-              <span className="start-choice__coming-soon">Coming Soon</span>
-            </div>
+            <button
+              type="button"
+              onClick={() => router.replace('/?mode=online')}
+              className="start-choice__btn start-choice__btn--online-active"
+            >
+              Online
+            </button>
           </div>
         </div>
       </main>
     );
+  }
+
+  if (view === 'online') {
+    if (showLobbyScreen) {
+      return <LobbyScreen onStartGame={onStart} />;
+    }
+    return <OnlineSetupScreen />;
   }
 
   return (

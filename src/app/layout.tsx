@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Londrina_Solid, Source_Sans_3 } from 'next/font/google';
 import './globals.css';
 import { LeaveGameProvider } from '@/context/LeaveGameContext';
+import { LobbyProvider } from '@/context/LobbyContext';
 import Footer from '@/components/Footer';
 
 const londrinaSolid = Londrina_Solid({
@@ -37,7 +38,7 @@ const criticalStyles = `
   .start-screen{max-width:28rem;margin:0 auto;padding:2rem;text-align:center}
   .start-choice__btn{padding:0.75rem 2rem;font-size:1.1rem;font-weight:600;border:none;border-radius:0.5rem;cursor:pointer}
   .start-choice__btn--local{background:var(--accent-quest);color:white}
-  .start-choice__btn--online{background:var(--surface);color:var(--text-muted);cursor:not-allowed;opacity:0.7}
+  .start-choice__btn--online-active{background:var(--accent-wizard);color:white}
   .start-choice__buttons{display:flex;flex-wrap:wrap;justify-content:center;gap:1.5rem;align-items:flex-start}
 `;
 
@@ -51,8 +52,10 @@ export default function RootLayout({
       <body className="layout-body">
         <style dangerouslySetInnerHTML={{ __html: criticalStyles }} />
         <LeaveGameProvider>
-          <div className="layout-main">{children}</div>
-          <Footer />
+          <LobbyProvider>
+            <div className="layout-main">{children}</div>
+            <Footer />
+          </LobbyProvider>
         </LeaveGameProvider>
       </body>
     </html>
