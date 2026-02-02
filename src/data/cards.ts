@@ -112,7 +112,7 @@ export const CARDS: Card[] = [
   hero(67, 'Dougie MacLobber', 'Archer', ['Strong', 'Strong', 'Sturdy'], '/cards/archer_dougie_SSU.png'),
   hero(68, 'Sneaky Sam', 'Thief', ['Strong', 'Sturdy'], '/cards/thief_sneaky_SU.png'),
   hero(69, 'The Shadow Guard', 'Barbarian', ['Sturdy', 'Fast', 'Fast'], '/cards/barbarian_shadow_UFF.png'),
-  hero(70, 'Lola Lullabard', 'Thief', ['Sturdy', 'Magic']),
+  hero(70, 'Lola Lullabard', 'Thief', ['Sturdy', 'Magic'], '/cards/thief_lola_um.png'),
   hero(71, 'Ragna the Reckless', 'Barbarian', ['Strong', 'Fast'], '/cards/barbarian_ragna_SF.png'),
 ];
 

@@ -20,13 +20,14 @@ A phased plan to build the web app, starting with game logic and testing, then a
 | ✅ | **1.6** Event resolvers: `src/engine/events.ts` — Archery, Royal, Tavern, Unguarded (swap + Healer block), Feast East/West, Fortune Reading, Hunting Expedition, Spell of Summoning, Wizard Tower Repairs, Eagles. |
 | ✅ | **1.7** Wizard rules: Stargazer (maybeAdvanceTurn — second card play); Summoner (canSummonFromPile, summonFromEventPile). Healer/Spellcaster already in 1.4/1.6. |
 | ✅ | **2.1–2.5** Phase 2 UI: StartScreen, GameScreen, WinScreen; Card, Hand, Party, Deck, EventPile, ActionBar, TargetSelector; useGameState; event target flow. |
+| ✅ | **3.x Polish**: Table layout (active player bottom, rotation); leave-game confirmation (LeaveGameContext, logo + footer Start Screen link); TargetSelector stacked list, hints (hero/wizard/cards), Play with No Effect; card images (Morvin, Jaspar, Lola); Fortune Reading click-to-zoom; Spell of Summoning wizard-swap fix; confetti on victory; typography (Londrina Solid), style guide, background, footer. |
 | ⬜ | **Next**: More engine tests (1.8); Phase 4 (lobby + multiplayer) when ready. |
 
 ### Where we're at (current testing phase)
 
-- **Phase 1 (engine)** — Complete. All cards, state, setup, validation, actions, event resolvers, and wizard rules (Healer blocks hero steals only; Spell of Summoning swaps wizards; Stargazer second play; Summoner from event pile; Pass only after action or when hand+deck empty).
-- **Phase 2 (local UI)** — Complete. Start → Game → Win flow; Card, Hand, Party (single Wizard slot), Deck, EventPile, ActionBar; Draw/Play/Dump/Pass Turn with correct hints; TargetSelector for all events (Hunting Expedition: select → double-click zoom → OK confirm); card zoom in play area, Fortune Reading, and Hunting Expedition; Win screen with confetti.
-- **Phase 3 (polish)** — Mostly complete. Healer/Spellcaster/Stargazer/Summoner, Giant Eagles, dump rules, Feasts, Fortune Reading, Hunting Expedition, event-blocked notification, empty hand+deck Pass rule. Manual testing in progress.
+- **Phase 1 (engine)** — Complete. All cards, state, setup, validation, actions, event resolvers, and wizard rules (Healer blocks hero steals only; Spell of Summoning swaps wizards; Stargazer second play; Summoner from event pile; Draw disabled when deck empty; Dump disabled during Stargazer second play; Pass only after action or when hand+deck empty).
+- **Phase 2 (local UI)** — Complete. Start → Game → Win flow; Card, Hand, Party (single Wizard slot), Deck, EventPile, ActionBar; Draw/Play/Dump/Pass Turn with correct hints; TargetSelector for all events with stacked player list, hints (Has/No hero or wizard, cards in hand, Healer protected), and "Play with No Effect" when no valid target; Hunting Expedition select → double-click zoom → OK confirm; card zoom in play area and Fortune Reading modal; Win screen with confetti.
+- **Phase 3 (polish)** — Complete. Healer/Spellcaster/Stargazer/Summoner, Giant Eagles, dump rules, Feasts, Fortune Reading, Hunting Expedition, event-blocked notification, empty hand+deck Pass, table rotation, leave-game modal, target hints, Play with No Effect, card image paths, Spell of Summoning fix, victory styling. Manual testing in progress.
 - **Phase 4 (multiplayer)** — Not started.
 
 ---
@@ -190,6 +191,7 @@ So you need:
 - **Authority**: one server (or “host” client) holds canonical state. All moves (draw, play, dump, event targets) sent as **actions** (e.g. `{ type: 'playCard', cardId, target? }`).
 - Server (or host) runs the same Phase 1 engine: `playCard(state, cardId, target)` etc., then broadcasts new state (or delta) to all clients.
 - Clients render from state; only the current player can send actions (enforced by server).
+- **UI note (table rotation):** For local/hot-seat play, the table layout rotates so the active player is always at the bottom (with "left" and "right" players on physical left/right). For **online multiplayer**, rotation is not necessary—each player is on their own screen, so their party can stay in the active-player position even when it isn't their turn. When building Phase 4, use a non-rotating layout for remote players (e.g. show all parties in a fixed order per client).
 
 ### 6.3 Backend options
 
@@ -209,10 +211,12 @@ So you need:
 ```
 heroes_wizards/
 ├── BUILD_PLAN.md           # this file
+├── STYLE_GUIDE.md          # ✅ color palette and typography reference
 ├── Deck Library and Rules.md
 ├── cards/                  # source card images (copy into public/cards)
 ├── public/
-│   └── cards/              # ✅ card images (served at /cards/...)
+│   ├── cards/              # ✅ card images (served at /cards/...)
+│   └── images/             # ✅ site artwork (logo, divider, background — see public/images/README.md)
 ├── src/
 │   ├── app/                # Next.js App Router
 │   │   ├── layout.tsx
@@ -230,9 +234,9 @@ heroes_wizards/
 │   │   ├── actions.ts      # ✅ drawCard, playCard, dumpCard
 │   │   ├── events.ts       # ✅ full event resolvers (1.6)
 │   │   └── wizards.ts      # TODO (optional) wizard helpers
-│   ├── components/         # TODO Phase 2
-│   ├── screens/            # TODO Phase 2
-│   └── hooks/              # TODO Phase 2
+│   ├── components/         # ✅ Card, Hand, Party, Deck, EventPile, ActionBar, TargetSelector, StartScreen, GameScreen, WinScreen, Confetti, FortuneReadingModal, GameLogo, Footer
+│   ├── context/            # ✅ LeaveGameContext (leave-game confirmation)
+│   └── hooks/               # ✅ useGameState (and other hooks as needed)
 ├── tests/
 │   └── engine/
 │       ├── setup.test.ts   # ✅
@@ -257,7 +261,7 @@ heroes_wizards/
 - [x] **2.3** Action bar and turn flow: Draw/Play/Dump/Pass Turn; hints; Pass disabled until action or no options.
 - [x] **2.4** Event UI: TargetSelector (player; Hunting Expedition select + double-click zoom + OK confirm).
 - [x] **2.5** Win screen with confetti; New game; Fortune Reading modal with zoom.
-- [x] **3.x** Polish: Healer (hero-only), Spellcaster, Stargazer, Summoner, Eagles, dump rules, Feasts, Fortune Reading, Hunting Expedition; event-blocked notification; empty hand+deck → Pass.
+- [x] **3.x** Polish: Healer (hero-only), Spellcaster, Stargazer, Summoner, Eagles, dump rules, Feasts, Fortune Reading, Hunting Expedition; event-blocked notification; empty hand+deck → Pass. Table layout (active bottom, rotation); leave-game modal (LeaveGameContext, logo + footer Start Screen link); target selector stacked list, hints, Play with No Effect; Stargazer no Dump; empty deck no Draw; card images (Morvin, Jaspar, Lola); Fortune Reading click-to-zoom; Spell of Summoning fix; confetti on victory; typography (Londrina Solid); style guide; background; footer.
 - [ ] **4.1** Lobby UI: Create Lobby / Join Game (like screenshot).
 - [ ] **4.2** Backend: rooms, join/create, start game.
 - [ ] **4.3** Sync: send actions, run on server, broadcast state.
@@ -272,4 +276,4 @@ heroes_wizards/
 - **Phase 3**: Wizard and edge-case polish.  
 - **Phase 4**: Lobby (create/join) and multiplayer sync, reusing the same engine on the server (or host).
 
-Starting with the engine and delaying the lobby is the right order: you can play and test the full game locally before touching networking. If you tell me your preferred stack (e.g. “React + Vite”, “Next.js”, “TypeScript only for now”), **Phase 1.1–1.4 and app shell are done;** next is **1.5–1.7** (actions, event resolvers, wizard rules), then Phase 2 UI.
+Starting with the engine and delaying the lobby is the right order: you can play and test the full game locally before touching networking. **Phase 1–3 are complete** (engine, local UI, polish). Next: **more engine tests (1.8)** and **Phase 4** (lobby + multiplayer) when ready.

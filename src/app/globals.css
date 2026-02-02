@@ -502,12 +502,57 @@ body {
   border: 1px solid var(--border);
 }
 
+/* Table layout for local play: top row (opposite), middle (left | deck+event | right), bottom (active). Online multiplayer will not use rotation. */
+.game-table__table {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  align-items: center;
+}
+
+.game-table__top {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+
+.game-table__middle {
+  margin-top: 1rem;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  width: 100%;
+  max-width: 1100px;
+}
+
+.game-table__left,
+.game-table__right {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 140px;
+  min-height: 320px;
+}
+
 .game-table__center {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-width: 0;
+}
+
+.game-table__deck-event {
   display: flex;
   flex-wrap: wrap;
   gap: 1.5rem;
   justify-content: center;
-  margin-bottom: 1.5rem;
+  align-items: flex-start;
 }
 
 .game-table__event-area {
@@ -525,11 +570,36 @@ body {
   max-width: 200px;
 }
 
-.game-table__parties {
+.game-table__bottom {
   display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
   justify-content: center;
+  width: 100%;
+}
+
+/* Party wrappers for table positions: rotation so "left/right" of current = physical left/right. */
+.game-table__party-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.game-table__party-wrap--bottom {
+  /* No rotation: active player faces themselves */
+}
+
+.game-table__party-wrap--left {
+  /* Rotate 90deg clockwise: player to current's left sits on physical left */
+  transform: rotate(90deg);
+}
+
+.game-table__party-wrap--right {
+  /* Rotate 90deg counter-clockwise: player to current's right sits on physical right */
+  transform: rotate(-90deg);
+}
+
+.game-table__party-wrap--top {
+  /* Rotate 180deg: players opposite current sit at top of table */
+  transform: rotate(180deg);
 }
 
 .game-hand {
@@ -1151,6 +1221,22 @@ body {
   margin-bottom: 1rem;
 }
 
+.target-selector__player-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.target-selector__player-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
 .target-selector__btn {
   padding: 0.5rem 1rem;
   font-size: 1rem;
@@ -1159,9 +1245,35 @@ body {
   border: none;
   border-radius: 0.4rem;
   cursor: pointer;
+  min-width: 10rem;
+  text-align: left;
 }
 
-.target-selector__btn:hover {
+.target-selector__btn:hover:not(:disabled) {
+  filter: brightness(1.1);
+}
+
+.target-selector__btn--disabled,
+.target-selector__btn:disabled {
+  background: #555;
+  color: #999;
+  cursor: not-allowed;
+  opacity: 0.85;
+}
+
+.target-selector__hint {
+  font-size: 0.9rem;
+  color: white;
+  flex: 1;
+  min-width: 0;
+}
+
+.target-selector__btn--no-effect {
+  background: var(--accent-quest);
+  color: white;
+}
+
+.target-selector__btn--no-effect:hover {
   filter: brightness(1.1);
 }
 
@@ -1264,7 +1376,7 @@ body {
 }
 
 .win-screen__title {
-  font-size: 2rem;
+  font-size: 3.5rem;
   font-weight: 700;
   color: var(--highlight);
   margin-bottom: 1rem;
@@ -1272,7 +1384,7 @@ body {
 }
 
 .win-screen__message {
-  font-size: 1.1rem;
+  font-size: 1.5rem;
   margin-bottom: 2rem;
   line-height: 1.5;
 }

@@ -1,6 +1,6 @@
 # Heroes & Wizards (digital fan version)
 
-A **fan-made**, **non-commercial** web app to play the card game **Heroes & Wizards** in the browser. Built with React and Next.js.
+A **fan-made**, **non-commercial** web app to play the card game **Heroes & Wizards** in the browser. Built with React and Next.js. Supports **2–5 players** in local hot-seat play (same device).
 
 ---
 
@@ -43,10 +43,12 @@ If you enjoy the game, please support the original: buy the physical card game f
 
 - `src/data/` — Card definitions (72 cards), types, constants
 - `src/engine/` — Game state, setup, validation, actions, event resolvers
-- `src/app/` — Next.js App Router pages (game, How to Play, Disclaimer)
-- `src/components/` — UI components (Card, Hand, Party, Deck, etc.)
+- `src/app/` — Next.js App Router (layout, game wrapper, How to Play, Disclaimer)
+- `src/components/` — UI (Card, Hand, Party, Deck, EventPile, ActionBar, TargetSelector, StartScreen, GameScreen, WinScreen, etc.)
+- `src/context/` — Leave-game confirmation (LeaveGameContext)
 - `tests/engine/` — Unit tests for the engine
 - `BUILD_PLAN.md` — Phased build plan (Phase 1 → 4)
+- `STYLE_GUIDE.md` — Color palette and typography reference
 - `Deck Library and Rules.md` — Card list and rules reference
 
 ## License

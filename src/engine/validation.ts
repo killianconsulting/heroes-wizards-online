@@ -115,8 +115,9 @@ export function getLegalActions(state: GameState): LegalActions {
   const current = state.players[state.currentPlayerIndex];
   const handSize = current.hand.length;
 
-  /** One draw per turn, and only before any play/dump/summon (draw is not the same as play). */
+  /** One draw per turn, and only before any play/dump/summon (draw is not the same as play). Cannot draw if deck is empty. */
   const canDraw =
+    state.deck.length > 0 &&
     handSize < MAX_HAND_SIZE &&
     !state.drewThisTurn &&
     !state.actedThisTurn &&
@@ -143,10 +144,13 @@ export function getLegalActions(state: GameState): LegalActions {
     }
   }
 
-  const canDump = current.hand.some((cardId) => {
-    const card = getCard(cardId);
-    return card.type !== 'event';
-  });
+  /** Dump is not allowed during Stargazer's second play — only Play Card or Pass Turn. */
+  const canDump =
+    !(state.stargazerSecondPlayUsed ?? false) &&
+    current.hand.some((cardId) => {
+      const card = getCard(cardId);
+      return card.type !== 'event';
+    });
 
   const hasSummoner =
     current.party.wizard !== null &&

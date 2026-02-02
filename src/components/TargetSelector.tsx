@@ -4,7 +4,7 @@ import { useState } from 'react';
 import type { EventId } from '@/data/constants';
 import type { GameState } from '@/engine/state';
 import type { EventTarget } from '@/engine/events';
-import { getEventTargetType } from '@/utils/eventTargets';
+import { getEventTargetType, getTargetPlayerInfo } from '@/utils/eventTargets';
 import Card from './Card';
 import CardZoomModal from './CardZoomModal';
 
@@ -33,21 +33,48 @@ export default function TargetSelector({
     .filter((i) => i !== currentIndex);
 
   if (targetType === 'player') {
+    const hasAnyValidTarget = otherPlayerIndices.some((i) =>
+      getTargetPlayerInfo(state, i, eventId).canSelect
+    );
+
     return (
       <div className="target-selector">
         <p className="target-selector__prompt">Choose a player to target:</p>
-        <div className="target-selector__options">
-          {otherPlayerIndices.map((i) => (
-            <button
-              key={i}
-              type="button"
-              onClick={() => onSelect({ playerIndex: i })}
-              className="target-selector__btn"
-            >
-              {state.players[i].name}
-            </button>
-          ))}
-        </div>
+        <ul className="target-selector__player-list" aria-label="Target players">
+          {!hasAnyValidTarget && (
+            <li className="target-selector__player-row">
+              <button
+                type="button"
+                onClick={() => onSelect({ playerIndex: -1 })}
+                className="target-selector__btn target-selector__btn--player target-selector__btn--no-effect"
+              >
+                Play with No Effect
+              </button>
+              <span className="target-selector__hint" aria-hidden="true">
+                No valid target — event is discarded
+              </span>
+            </li>
+          )}
+          {otherPlayerIndices.map((i) => {
+            const { canSelect, hint } = getTargetPlayerInfo(state, i, eventId);
+            return (
+              <li key={i} className="target-selector__player-row">
+                <button
+                  type="button"
+                  onClick={() => onSelect({ playerIndex: i })}
+                  className={`target-selector__btn target-selector__btn--player ${!canSelect ? 'target-selector__btn--disabled' : ''}`}
+                  disabled={!canSelect}
+                  title={!canSelect ? hint : undefined}
+                >
+                  {state.players[i].name}
+                </button>
+                <span className="target-selector__hint" aria-hidden="true">
+                  {hint}
+                </span>
+              </li>
+            );
+          })}
+        </ul>
         <button type="button" onClick={onCancel} className="target-selector__cancel">
           Cancel
         </button>
@@ -60,18 +87,26 @@ export default function TargetSelector({
       return (
         <div className="target-selector">
           <p className="target-selector__prompt">Choose a player:</p>
-          <div className="target-selector__options">
-            {otherPlayerIndices.map((i) => (
-              <button
-                key={i}
-                type="button"
-                onClick={() => setChosenPlayerIndex(i)}
-                className="target-selector__btn"
-              >
-                {state.players[i].name}
-              </button>
-            ))}
-          </div>
+          <ul className="target-selector__player-list" aria-label="Players to choose from">
+            {otherPlayerIndices.map((i) => {
+              const handCount = state.players[i].hand.length;
+              const hint = handCount === 1 ? '1 card in hand' : `${handCount} cards in hand`;
+              return (
+                <li key={i} className="target-selector__player-row">
+                  <button
+                    type="button"
+                    onClick={() => setChosenPlayerIndex(i)}
+                    className="target-selector__btn target-selector__btn--player"
+                  >
+                    {state.players[i].name}
+                  </button>
+                  <span className="target-selector__hint" aria-hidden="true">
+                    {hint}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
           <button type="button" onClick={onCancel} className="target-selector__cancel">
             Cancel
           </button>

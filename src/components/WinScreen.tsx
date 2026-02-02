@@ -16,7 +16,7 @@ export default function WinScreen({ winnerName, onNewGame }: WinScreenProps) {
         <strong>{winnerName}</strong> has completed the quest and saved the kingdom!
       </p>
       <button type="button" onClick={onNewGame} className="win-screen__btn">
-        New game
+        New Game
       </button>
     </main>
   );

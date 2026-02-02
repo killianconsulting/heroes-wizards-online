@@ -143,38 +143,102 @@ export default function GameScreen({
       ) : (
         <>
           <section className="game-table">
-            <div className="game-table__center">
-              <Deck
-                count={state.deck.length}
-                canDraw={legalActions?.canDraw ?? false}
-                onDraw={onDraw}
-                onZoomCard={(id, faceDown) => setZoomedCard({ cardId: id, faceDown })}
-              />
-              <div className="game-table__event-area">
-                {legalActions?.canSummonFromPile && (
-                  <p className="event-pile-hint">
-                    Use Summoner to draw a card from the Event Pile.
-                  </p>
-                )}
-                <EventPile
-                  cardIds={state.eventPile}
-                  onPickCard={legalActions?.canSummonFromPile ? onSummonFromPile : undefined}
-                  pickable={!!legalActions?.canSummonFromPile}
-                  onZoomCard={(id) => setZoomedCard({ cardId: id })}
-                />
+            {/* Table layout for local play: active player bottom, others around (clockwise). Online multiplayer will not rotate. */}
+            <div className="game-table__table">
+              {/* Top: players opposite current (4th in 4p, 4th & 5th in 5p; in 2p the other player) */}
+              <div className="game-table__top">
+                {(() => {
+                  const N = state.players.length;
+                  const topIndices =
+                    N === 2
+                      ? [(currentIndex + 1) % 2]
+                      : N === 4
+                        ? [(currentIndex + 2) % 4]
+                        : N === 5
+                          ? [(currentIndex + 2) % 5, (currentIndex + 3) % 5]
+                          : [];
+                  return topIndices.map((i) => (
+                    <div key={state.players[i].id} className="game-table__party-wrap game-table__party-wrap--top">
+                      <PartyDisplay
+                        party={state.players[i].party}
+                        playerName={state.players[i].name}
+                        isCurrent={false}
+                        onZoomCard={(id) => setZoomedCard({ cardId: id })}
+                      />
+                    </div>
+                  ));
+                })()}
               </div>
-            </div>
 
-            <div className="game-table__parties">
-              {state.players.map((p, i) => (
-                <PartyDisplay
-                  key={p.id}
-                  party={p.party}
-                  playerName={p.name}
-                  isCurrent={i === currentIndex}
-                  onZoomCard={(id) => setZoomedCard({ cardId: id })}
-                />
-              ))}
+              {/* Middle: left party | deck + event pile | right party */}
+              <div className="game-table__middle">
+                <div className="game-table__left">
+                  {state.players.length >= 3 && (() => {
+                    const i = (currentIndex + 1) % state.players.length;
+                    return (
+                      <div className="game-table__party-wrap game-table__party-wrap--left">
+                        <PartyDisplay
+                          party={state.players[i].party}
+                          playerName={state.players[i].name}
+                          isCurrent={false}
+                          onZoomCard={(id) => setZoomedCard({ cardId: id })}
+                        />
+                      </div>
+                    );
+                  })()}
+                </div>
+                <div className="game-table__center">
+                  <div className="game-table__deck-event">
+                    <Deck
+                      count={state.deck.length}
+                      canDraw={legalActions?.canDraw ?? false}
+                      onDraw={onDraw}
+                      onZoomCard={(id, faceDown) => setZoomedCard({ cardId: id, faceDown })}
+                    />
+                    <div className="game-table__event-area">
+                      {legalActions?.canSummonFromPile && (
+                        <p className="event-pile-hint">
+                          Use Summoner to draw a card from the Event Pile.
+                        </p>
+                      )}
+                      <EventPile
+                        cardIds={state.eventPile}
+                        onPickCard={legalActions?.canSummonFromPile ? onSummonFromPile : undefined}
+                        pickable={!!legalActions?.canSummonFromPile}
+                        onZoomCard={(id) => setZoomedCard({ cardId: id })}
+                      />
+                    </div>
+                  </div>
+                </div>
+                <div className="game-table__right">
+                  {state.players.length >= 3 && (() => {
+                    const i = (currentIndex + state.players.length - 1) % state.players.length;
+                    return (
+                      <div className="game-table__party-wrap game-table__party-wrap--right">
+                        <PartyDisplay
+                          party={state.players[i].party}
+                          playerName={state.players[i].name}
+                          isCurrent={false}
+                          onZoomCard={(id) => setZoomedCard({ cardId: id })}
+                        />
+                      </div>
+                    );
+                  })()}
+                </div>
+              </div>
+
+              {/* Bottom: active player (current turn) */}
+              <div className="game-table__bottom">
+                <div className="game-table__party-wrap game-table__party-wrap--bottom">
+                  <PartyDisplay
+                    key={state.players[currentIndex].id}
+                    party={currentPlayer.party}
+                    playerName={currentPlayer.name}
+                    isCurrent={true}
+                    onZoomCard={(id) => setZoomedCard({ cardId: id })}
+                  />
+                </div>
+              </div>
             </div>
           </section>
 
