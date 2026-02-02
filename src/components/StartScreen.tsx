@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import GameLogo from './GameLogo';
 import { MIN_PLAYERS, MAX_PLAYERS } from '@/data/constants';
 import { getRandomThemedName } from '@/utils/themedNames';
 import PlayerAvatarIcon from './PlayerAvatarIcon';
@@ -32,11 +33,13 @@ export default function StartScreen({ onStart }: StartScreenProps) {
 
   return (
     <main className="start-screen">
-      <h1 className="start-title">Heroes & Wizards</h1>
+      <h1 className="start-title">
+        <GameLogo maxHeight={173} />
+      </h1>
       <p className="start-subtitle">The Card Game of Strategy, Magic & Mischief!</p>
 
       <form onSubmit={handleSubmit} className="start-form">
-        <label className="start-label">
+        <label className="start-label start-label--center">
           Number of Players (2–5)
           <div className="start-player-count">
             <button

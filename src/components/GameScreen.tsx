@@ -7,6 +7,7 @@ import type { GameState } from '@/engine/state';
 import type { EventTarget } from '@/engine/events';
 import type { EventId } from '@/data/constants';
 import { eventNeedsTarget } from '@/utils/eventTargets';
+import { useLeaveGame } from '@/context/LeaveGameContext';
 import Deck from './Deck';
 import EventPile from './EventPile';
 import PartyDisplay from './Party';
@@ -16,6 +17,7 @@ import TargetSelector from './TargetSelector';
 import CardZoomModal from './CardZoomModal';
 import FortuneReadingModal from './FortuneReadingModal';
 import EventBlockedNotification from './EventBlockedNotification';
+import GameLogo from './GameLogo';
 
 interface GameScreenProps {
   state: GameState;
@@ -27,7 +29,9 @@ interface GameScreenProps {
   onSummonFromPile: (cardId: number) => void;
   onDismissFortuneReading: () => void;
   onDismissEventBlocked: () => void;
+  onLeaveGame: () => void;
 }
+
 
 export default function GameScreen({
   state,
@@ -38,6 +42,8 @@ export default function GameScreen({
   onDumpCard,
   onSummonFromPile,
   onDismissFortuneReading,
+  onDismissEventBlocked,
+  onLeaveGame,
 }: GameScreenProps) {
   const [selectedCardId, setSelectedCardId] = useState<number | null>(null);
   const [pendingEvent, setPendingEvent] = useState<{ cardId: number; eventId: EventId } | null>(
@@ -46,6 +52,7 @@ export default function GameScreen({
   const [zoomedCard, setZoomedCard] = useState<{ cardId: number; faceDown?: boolean } | null>(
     null
   );
+  const { requestLeaveGame } = useLeaveGame();
 
   const currentIndex = state.currentPlayerIndex;
   const currentPlayer = state.players[currentIndex];
@@ -107,11 +114,20 @@ export default function GameScreen({
         />
       )}
       <header className="game-header">
-        <h1 className="game-title">Heroes & Wizards</h1>
-        <p className="game-turn">
+        <button
+          type="button"
+          className="game-header__logo-btn"
+          onClick={requestLeaveGame}
+          aria-label="Leave game"
+        >
+          <div className="game-header__title">
+            <GameLogo maxHeight={48} />
+          </div>
+        </button>
+        <h2 className="game-turn">
           {currentPlayer.name}&apos;s Turn
           {state.stargazerSecondPlayUsed && ' (second play)'}
-        </p>
+        </h2>
       </header>
 
       {pendingEvent ? (

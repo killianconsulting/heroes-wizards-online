@@ -87,7 +87,7 @@ export const CARDS: Card[] = [
   event(43, 'Wizard Tower Repairs', 'wizard_tower_repairs', 'Send a wizard from any one party to the event pile', '/cards/event_wizard_tower_repairs.png'),
   // 28 Heroes (id 44..71)
   hero(44, 'Lord Vlobnik', 'Barbarian', ['Strong', 'Strong', 'Magic'], '/cards/barbarian_lord_SSM.png'),
-  hero(45, 'Jaspar the Jester', 'Thief', ['Fast', 'Magic']),
+  hero(45, 'Jaspar the Jester', 'Thief', ['Fast', 'Magic'], '/cards/thief_jaspar_FM.png'),
   hero(46, 'Wulfric Duskaxe', 'Barbarian', ['Fast', 'Magic', 'Magic'], '/cards/barbarian_wulfric_FMM.png'),
   hero(47, "Robbin' Rob", 'Archer', ['Strong', 'Fast', 'Fast'], '/cards/archer_rob_SFF.png'),
   hero(48, 'Furui Ninjin', 'Knight', ['Strong', 'Fast'], '/cards/knight_furui_SF.png'),

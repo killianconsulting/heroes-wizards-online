@@ -1,6 +1,8 @@
 'use client';
 
+import { useEffect } from 'react';
 import { useGameState } from '@/hooks/useGameState';
+import { useLeaveGame } from '@/context/LeaveGameContext';
 import StartScreen from '@/components/StartScreen';
 import GameScreen from '@/components/GameScreen';
 import WinScreen from '@/components/WinScreen';
@@ -19,6 +21,13 @@ export default function GameWrapper() {
     handleDismissFortuneReading,
     handleDismissEventBlocked,
   } = useGameState();
+  const { registerLeaveGame } = useLeaveGame();
+
+  const inGame = !!state && !state.winnerPlayerId;
+  useEffect(() => {
+    registerLeaveGame(inGame, reset);
+    return () => registerLeaveGame(false, () => {});
+  }, [inGame, reset, registerLeaveGame]);
 
   if (!state) {
     return <StartScreen onStart={startGame} />;
@@ -45,6 +54,7 @@ export default function GameWrapper() {
       onSummonFromPile={handleSummonFromPile}
       onDismissFortuneReading={handleDismissFortuneReading}
       onDismissEventBlocked={handleDismissEventBlocked}
+      onLeaveGame={reset}
     />
   );
 }

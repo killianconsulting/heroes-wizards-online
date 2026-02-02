@@ -20,7 +20,14 @@ A phased plan to build the web app, starting with game logic and testing, then a
 | ✅ | **1.6** Event resolvers: `src/engine/events.ts` — Archery, Royal, Tavern, Unguarded (swap + Healer block), Feast East/West, Fortune Reading, Hunting Expedition, Spell of Summoning, Wizard Tower Repairs, Eagles. |
 | ✅ | **1.7** Wizard rules: Stargazer (maybeAdvanceTurn — second card play); Summoner (canSummonFromPile, summonFromEventPile). Healer/Spellcaster already in 1.4/1.6. |
 | ✅ | **2.1–2.5** Phase 2 UI: StartScreen, GameScreen, WinScreen; Card, Hand, Party, Deck, EventPile, ActionBar, TargetSelector; useGameState; event target flow. |
-| ⬜ | **Next**: Phase 2 polish (2.4 event UI edge cases, 2.5 tweaks) or Phase 3/4. |
+| ⬜ | **Next**: More engine tests (1.8); Phase 4 (lobby + multiplayer) when ready. |
+
+### Where we're at (current testing phase)
+
+- **Phase 1 (engine)** — Complete. All cards, state, setup, validation, actions, event resolvers, and wizard rules (Healer blocks hero steals only; Spell of Summoning swaps wizards; Stargazer second play; Summoner from event pile; Pass only after action or when hand+deck empty).
+- **Phase 2 (local UI)** — Complete. Start → Game → Win flow; Card, Hand, Party (single Wizard slot), Deck, EventPile, ActionBar; Draw/Play/Dump/Pass Turn with correct hints; TargetSelector for all events (Hunting Expedition: select → double-click zoom → OK confirm); card zoom in play area, Fortune Reading, and Hunting Expedition; Win screen with confetti.
+- **Phase 3 (polish)** — Mostly complete. Healer/Spellcaster/Stargazer/Summoner, Giant Eagles, dump rules, Feasts, Fortune Reading, Hunting Expedition, event-blocked notification, empty hand+deck Pass rule. Manual testing in progress.
+- **Phase 4 (multiplayer)** — Not started.
 
 ---
 
@@ -245,12 +252,12 @@ heroes_wizards/
 - [x] **1.6** Event resolvers: one by one (Archery, Feast, Fortune, Hunting, Royal, Spell of Summoning, Tavern, Eagles, Unguarded, Wizard Tower).
 - [x] **1.7** Wizard rules: Healer (1.6), Spellcaster (1.4), Stargazer (maybeAdvanceTurn), Summoner (summonFromEventPile).
 - [ ] **1.8** Tests for engine (setup ✅, validation ✅; remaining: actions, events, wizards, win conditions).
-- [x] **2.1** (shell only) Next.js app: `src/app/` with layout, page; placeholder home. Start/game screens not yet built.
-- [ ] **2.2** Card, Hand, Party, Deck, EventPile components.
-- [ ] **2.3** Action bar and turn flow; connect to engine.
-- [ ] **2.4** Event UI: target selection (player/card) where needed.
-- [ ] **2.5** Win screen and “New game”.
-- [ ] **3.x** Polish: all wizard and edge cases; manual testing.
+- [x] **2.1** Next.js app: layout, page; StartScreen, GameScreen, WinScreen.
+- [x] **2.2** Card, Hand, Party, Deck, EventPile; card zoom (play area, Fortune Reading, Hunting Expedition double-click).
+- [x] **2.3** Action bar and turn flow: Draw/Play/Dump/Pass Turn; hints; Pass disabled until action or no options.
+- [x] **2.4** Event UI: TargetSelector (player; Hunting Expedition select + double-click zoom + OK confirm).
+- [x] **2.5** Win screen with confetti; New game; Fortune Reading modal with zoom.
+- [x] **3.x** Polish: Healer (hero-only), Spellcaster, Stargazer, Summoner, Eagles, dump rules, Feasts, Fortune Reading, Hunting Expedition; event-blocked notification; empty hand+deck → Pass.
 - [ ] **4.1** Lobby UI: Create Lobby / Join Game (like screenshot).
 - [ ] **4.2** Backend: rooms, join/create, start game.
 - [ ] **4.3** Sync: send actions, run on server, broadcast state.
