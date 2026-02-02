@@ -1,6 +1,13 @@
 Deck Library 
 
-There are 72 cards in the deck. 
+There are 72 cards in the deck. 2-5 players. 
+https://jofgames.com.au/heroes-and-wizards/ 
+
+Notes for Heroes, key for abbreviation on image files: 
+    S = Strong 
+    F = Fast 
+    M = Magic 
+    U = Sturdy 
 
 4 Quest Cards 
     "Win the Game! Requires 6 matching skills" 

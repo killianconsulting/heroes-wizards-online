@@ -22,10 +22,11 @@ const HERO_PARTY_KEY: Record<HeroType, keyof Party> = {
 /** After playing a card: Stargazer gets second play; others must pass. */
 function afterPlay(state: GameState): GameState {
   const current = state.players[state.currentPlayerIndex];
+  const wizardCard = current.party.wizard !== null ? getCard(current.party.wizard) : null;
   const hasStargazer =
-    current.party.wizard !== null &&
-    isWizardCard(getCard(current.party.wizard)) &&
-    getCard(current.party.wizard).wizardType === 'Stargazer';
+    wizardCard !== null &&
+    isWizardCard(wizardCard) &&
+    wizardCard.wizardType === 'Stargazer';
   if (hasStargazer && !state.stargazerSecondPlayUsed) {
     return { ...state, stargazerSecondPlayUsed: true };
   }

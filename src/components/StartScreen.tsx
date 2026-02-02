@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import GameLogo from './GameLogo';
 import { MIN_PLAYERS, MAX_PLAYERS } from '@/data/constants';
 import { getRandomThemedName } from '@/utils/themedNames';
@@ -10,7 +11,13 @@ interface StartScreenProps {
   onStart: (playerNames: string[]) => void;
 }
 
+type StartView = 'choice' | 'local';
+
 export default function StartScreen({ onStart }: StartScreenProps) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const mode = searchParams.get('mode');
+  const view: StartView = mode === 'local' ? 'local' : 'choice';
   const [playerCount, setPlayerCount] = useState(MIN_PLAYERS);
   const [names, setNames] = useState<string[]>(
     Array.from({ length: MIN_PLAYERS }, (_, i) => `Player ${i + 1}`)
@@ -31,13 +38,53 @@ export default function StartScreen({ onStart }: StartScreenProps) {
     onStart(names.slice(0, playerCount));
   };
 
+  if (view === 'choice') {
+    return (
+      <main className="start-screen">
+        <h1 className="start-title">
+          <GameLogo maxHeight={173} />
+        </h1>
+        <p className="start-subtitle">The Card Game of Strategy, Magic & Mischief!</p>
+        <div className="start-choice">
+          <div className="start-choice__buttons">
+            <button
+              type="button"
+              onClick={() => router.replace('/?mode=local')}
+              className="start-choice__btn start-choice__btn--local"
+            >
+              Local
+            </button>
+            <div className="start-choice__option">
+              <button
+                type="button"
+                disabled
+                className="start-choice__btn start-choice__btn--online"
+                aria-disabled="true"
+              >
+                Online
+              </button>
+              <span className="start-choice__coming-soon">Coming Soon</span>
+            </div>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main className="start-screen">
       <h1 className="start-title">
         <GameLogo maxHeight={173} />
       </h1>
       <p className="start-subtitle">The Card Game of Strategy, Magic & Mischief!</p>
-
+      <button
+        type="button"
+        onClick={() => router.replace('/')}
+        className="start-change-mode"
+        aria-label="Change play mode (Local or Online)"
+      >
+        Change Mode
+      </button>
       <form onSubmit={handleSubmit} className="start-form">
         <label className="start-label start-label--center">
           Number of Players (2–5)

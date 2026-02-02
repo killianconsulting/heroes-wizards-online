@@ -164,7 +164,6 @@ body {
 }
 
 .static-page__title {
-  font-size: 1.75rem;
   font-weight: 700;
   margin-bottom: 1rem;
   color: var(--text);
@@ -179,17 +178,38 @@ body {
 }
 
 .static-page__h2 {
-  font-size: 1.25rem;
   font-weight: 700;
   margin: 0 0 0.75rem 0;
   color: var(--highlight);
 }
 
 .static-page__h3 {
-  font-size: 1.05rem;
   font-weight: 600;
   margin: 1.25rem 0 0.5rem 0;
   color: var(--text);
+}
+
+.static-page__figure {
+  margin: 1.5rem 0;
+}
+
+.static-page__img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.5rem;
+}
+
+.static-page__img--quarter {
+  max-width: 25%;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.static-page__img--half {
+  max-width: 50%;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .static-page__official {
@@ -254,9 +274,81 @@ body {
 }
 
 .start-subtitle {
-  color: var(--text-muted);
+  color: white;
   margin-bottom: 2rem;
   font-size: 0.95rem;
+}
+
+/* Initial choice: Local vs Online */
+.start-choice {
+  margin-bottom: 1rem;
+}
+
+.start-choice__buttons {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1.5rem;
+  align-items: flex-start;
+}
+
+.start-choice__btn {
+  padding: 0.75rem 2rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  min-width: 8rem;
+  font-family: var(--font-heading), sans-serif;
+}
+
+.start-choice__btn--local {
+  background: var(--accent-quest);
+  color: white;
+}
+
+.start-choice__btn--local:hover {
+  filter: brightness(1.1);
+}
+
+.start-choice__btn--online {
+  background: var(--surface);
+  color: var(--text-muted);
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.start-choice__option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.start-choice__coming-soon {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.start-change-mode {
+  display: block;
+  margin: 0 auto 1rem;
+  padding: 0.5rem 1.25rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  background: var(--accent-wizard);
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  width: 100%;
+  max-width: 14rem;
+}
+
+.start-change-mode:hover {
+  filter: brightness(1.1);
 }
 
 .start-form {

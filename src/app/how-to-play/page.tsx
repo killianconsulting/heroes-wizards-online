@@ -83,6 +83,14 @@ export default function HowToPlayPage() {
             A party with at least 6 matching skills is ready to go on a quest and win the game.
           </p>
 
+          <figure className="static-page__figure">
+            <img
+              src="/images/hw_cards_sample.png"
+              alt="Sample of Heroes & Wizards cards"
+              className="static-page__img static-page__img--half"
+            />
+          </figure>
+
           <h3 className="static-page__h3">Wizard Cards (Blue)</h3>
           <p className="static-page__body">
             These cards are played exactly like hero cards except that instead of skills, they each have a special ability written on them.
@@ -98,6 +106,13 @@ export default function HowToPlayPage() {
           <p className="static-page__body">
             These cards are played face-up onto a pile beside the deck called the event pile. When you play an event card, you must follow the instructions on that card, even if following the instructions has no effect.
           </p>
+          <figure className="static-page__figure">
+            <img
+              src="/images/hw_cards_sample_larger.png"
+              alt="Sample of Heroes & Wizards cards"
+              className="static-page__img"
+            />
+          </figure>
           <p className="static-page__body">
             <strong>Note:</strong> If you use an event card to steal a hero from another player&apos;s party, the stolen card must enter your own party immediately and the card it replaces (if any) must be given to the party of the player you stole from. If you are required to steal a card from a player&apos;s hand instead, the stolen card must enter your hand, not your party.
           </p>
@@ -106,6 +121,13 @@ export default function HowToPlayPage() {
           <p className="static-page__body">
             You can use a quest card to take your party on an epic quest to save the kingdom and win the game!
           </p>
+          <figure className="static-page__figure">
+            <img
+              src="/cards/quest_card.png"
+              alt="Quest card example"
+              className="static-page__img static-page__img--quarter"
+            />
+          </figure>
           <p className="static-page__body">
             To go on a quest, simply play a quest card anywhere onto the table! But you can only play a quest card if your party has at least 6 matching skills in it (for example, 6 Magic skills).
           </p>
@@ -132,6 +154,13 @@ export default function HowToPlayPage() {
           <p className="static-page__body">
             <strong>Note:</strong> If all the cards in the deck are drawn before the game is finished, players can then also win by playing the &quot;Giant Eagles Arrive&quot; event card on their turn!
           </p>
+          <figure className="static-page__figure">
+            <img
+              src="/cards/event_eagles.png"
+              alt="Giant Eagles Arrive event card"
+              className="static-page__img static-page__img--quarter"
+            />
+          </figure>
         </section>
 
         <p className="static-page__official">
