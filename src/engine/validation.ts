@@ -157,7 +157,9 @@ export function getLegalActions(state: GameState): LegalActions {
     wizardCard !== null &&
     isWizardCard(wizardCard) &&
     wizardCard.wizardType === 'Summoner';
-  const canSummonFromPile = hasSummoner && state.eventPile.length > 0;
+  /** 5-card hand limit applies before Summoner ability: cannot take from event pile if hand is already full. */
+  const canSummonFromPile =
+    hasSummoner && state.eventPile.length > 0 && handSize < MAX_HAND_SIZE;
 
   /** Pass is allowed after draw/play/dump/summon this turn, or when there is no other option (empty hand and empty deck). */
   const canPassTurn =

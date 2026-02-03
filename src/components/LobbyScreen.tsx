@@ -6,6 +6,7 @@ import GameLogo from './GameLogo';
 import { useLobby } from '@/context/LobbyContext';
 import PlayerAvatarIcon from './PlayerAvatarIcon';
 import { MAX_PLAYERS } from '@/data/constants';
+import { leaveLobby as leaveLobbySupabase } from '@/lib/lobby';
 
 interface LobbyScreenProps {
   onStartGame?: (playerNames: string[]) => void;
@@ -16,10 +17,13 @@ export default function LobbyScreen({ onStartGame }: LobbyScreenProps) {
   const { lobby, leaveLobby } = useLobby();
   const [copied, setCopied] = useState(false);
 
-  const handleLeaveLobby = useCallback(() => {
+  const handleLeaveLobby = useCallback(async () => {
+    if (lobby?.lobbyId && lobby?.playerId) {
+      await leaveLobbySupabase(lobby.lobbyId, lobby.playerId);
+    }
     leaveLobby();
     router.replace('/?mode=online');
-  }, [leaveLobby, router]);
+  }, [lobby?.lobbyId, lobby?.playerId, leaveLobby, router]);
 
   const inviteUrl =
     typeof window !== 'undefined'

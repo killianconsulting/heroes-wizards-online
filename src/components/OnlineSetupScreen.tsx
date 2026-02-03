@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import GameLogo from './GameLogo';
 import { useLobby } from '@/context/LobbyContext';
+import { createLobby, joinLobby } from '@/lib/lobby';
+import { isSupabaseConfigured } from '@/lib/supabase';
 
 const NAME_MAX_LENGTH = 20;
 const LOBBY_CODE_LENGTH = 4;
@@ -15,10 +17,34 @@ export default function OnlineSetupScreen() {
   const [joinName, setJoinName] = useState('');
   const [createName, setCreateName] = useState('');
   const [joinError, setJoinError] = useState('');
+  const [createError, setCreateError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleCreateLobby = (e: React.FormEvent) => {
+  const handleCreateLobby = async (e: React.FormEvent) => {
     e.preventDefault();
+    setCreateError('');
+    setLoading(true);
     const name = createName.trim() || 'Player';
+
+    if (isSupabaseConfigured()) {
+      const result = await createLobby(name);
+      setLoading(false);
+      if ('error' in result) {
+        setCreateError(result.error);
+        return;
+      }
+      setLobby({
+        lobbyCode: result.lobbyCode,
+        playerName: result.playerName,
+        isHost: true,
+        players: result.players,
+        lobbyId: result.lobbyId,
+        playerId: result.playerId,
+      });
+      router.replace(`/?mode=online&lobby=${result.lobbyCode}`);
+      return;
+    }
+
     const code = generateLobbyCode();
     setLobby({
       lobbyCode: code,
@@ -26,24 +52,49 @@ export default function OnlineSetupScreen() {
       isHost: true,
       players: [{ id: 'host', name, isHost: true }],
     });
+    setLoading(false);
     router.replace(`/?mode=online&lobby=${code}`);
   };
 
-  const handleJoinLobby = (e: React.FormEvent) => {
+  const handleJoinLobby = async (e: React.FormEvent) => {
     e.preventDefault();
     setJoinError('');
+    setLoading(true);
     const code = joinLobbyCode.trim().toUpperCase();
     const name = joinName.trim() || 'Player';
+
     if (code.length !== LOBBY_CODE_LENGTH) {
       setJoinError('Lobby code must be 4 letters.');
+      setLoading(false);
       return;
     }
+
+    if (isSupabaseConfigured()) {
+      const result = await joinLobby(code, name);
+      setLoading(false);
+      if ('error' in result) {
+        setJoinError(result.error);
+        return;
+      }
+      setLobby({
+        lobbyCode: result.lobbyCode,
+        playerName: result.playerName,
+        isHost: false,
+        players: result.players,
+        lobbyId: result.lobbyId,
+        playerId: result.playerId,
+      });
+      router.replace(`/?mode=online&lobby=${result.lobbyCode}`);
+      return;
+    }
+
     setLobby({
       lobbyCode: code,
       playerName: name,
       isHost: false,
       players: [{ id: 'me', name }],
     });
+    setLoading(false);
     router.replace(`/?mode=online&lobby=${code}`);
   };
 
@@ -95,8 +146,12 @@ export default function OnlineSetupScreen() {
                 {joinError}
               </p>
             )}
-            <button type="submit" className="online-setup__btn online-setup__btn--join">
-              Join
+            <button
+              type="submit"
+              className="online-setup__btn online-setup__btn--join"
+              disabled={loading}
+            >
+              {loading ? '…' : 'Join'}
             </button>
           </form>
         </section>
@@ -115,8 +170,17 @@ export default function OnlineSetupScreen() {
                 maxLength={NAME_MAX_LENGTH}
               />
             </label>
-            <button type="submit" className="online-setup__btn online-setup__btn--create">
-              Create Lobby
+            {createError && (
+              <p className="online-setup__error" role="alert">
+                {createError}
+              </p>
+            )}
+            <button
+              type="submit"
+              className="online-setup__btn online-setup__btn--create"
+              disabled={loading}
+            >
+              {loading ? '…' : 'Create Lobby'}
             </button>
           </form>
         </section>

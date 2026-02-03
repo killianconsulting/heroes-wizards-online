@@ -4,10 +4,13 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
   ReactNode,
 } from 'react';
+import { subscribeToLobbyPlayers } from '@/lib/lobby';
+import { isSupabaseConfigured } from '@/lib/supabase';
 
 export interface LobbyPlayer {
   id: string;
@@ -20,11 +23,17 @@ export interface LobbyState {
   playerName: string;
   isHost: boolean;
   players: LobbyPlayer[];
+  /** Set when using Supabase; used for Realtime and leave. */
+  lobbyId?: string;
+  /** This client's row id in lobby_players; used for leave. */
+  playerId?: string;
 }
+
+type SetLobbyArg = LobbyState | ((prev: LobbyState | null) => LobbyState | null);
 
 interface LobbyContextValue {
   lobby: LobbyState | null;
-  setLobby: (state: LobbyState) => void;
+  setLobby: (arg: SetLobbyArg) => void;
   leaveLobby: () => void;
   generateLobbyCode: () => string;
 }
@@ -57,8 +66,10 @@ export function useLobby() {
 export function LobbyProvider({ children }: { children: ReactNode }) {
   const [lobby, setLobbyState] = useState<LobbyState | null>(null);
 
-  const setLobby = useCallback((state: LobbyState) => {
-    setLobbyState(state);
+  const setLobby = useCallback((arg: SetLobbyArg) => {
+    setLobbyState((prev) =>
+      typeof arg === 'function' ? arg(prev) : arg
+    );
   }, []);
 
   const leaveLobby = useCallback(() => {
@@ -66,6 +77,15 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const generateLobbyCode = useCallback(() => generateCode(4), []);
+
+  // Subscribe to Supabase Realtime when we have a lobby with lobbyId
+  useEffect(() => {
+    if (!isSupabaseConfigured() || !lobby?.lobbyId) return;
+    const unsubscribe = subscribeToLobbyPlayers(lobby.lobbyId, (players) => {
+      setLobbyState((prev) => (prev ? { ...prev, players } : null));
+    });
+    return unsubscribe;
+  }, [lobby?.lobbyId]);
 
   const value = useMemo(
     () => ({ lobby, setLobby, leaveLobby, generateLobbyCode }),

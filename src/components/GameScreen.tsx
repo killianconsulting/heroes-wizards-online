@@ -52,6 +52,8 @@ export default function GameScreen({
   const [zoomedCard, setZoomedCard] = useState<{ cardId: number; faceDown?: boolean } | null>(
     null
   );
+  /** When Summoner picks from event pile: card selected for confirmation (zoom + "Take this card"). */
+  const [pendingSummonCardId, setPendingSummonCardId] = useState<number | null>(null);
   const { requestLeaveGame } = useLeaveGame();
 
   const currentIndex = state.currentPlayerIndex;
@@ -98,7 +100,24 @@ export default function GameScreen({
         <CardZoomModal
           cardId={zoomedCard.cardId}
           faceDown={zoomedCard.faceDown}
-          onClose={() => setZoomedCard(null)}
+          onClose={() => {
+            setZoomedCard(null);
+            setPendingSummonCardId(null);
+          }}
+          confirmLabel={
+            pendingSummonCardId !== null && pendingSummonCardId === zoomedCard.cardId
+              ? 'Take This Card'
+              : undefined
+          }
+          onConfirm={
+            pendingSummonCardId !== null && pendingSummonCardId === zoomedCard.cardId
+              ? () => {
+                  onSummonFromPile(pendingSummonCardId);
+                  setPendingSummonCardId(null);
+                  setZoomedCard(null);
+                }
+              : undefined
+          }
         />
       )}
       {state.pendingFortuneReading && (
@@ -196,14 +215,16 @@ export default function GameScreen({
                       onZoomCard={(id, faceDown) => setZoomedCard({ cardId: id, faceDown })}
                     />
                     <div className="game-table__event-area">
-                      {legalActions?.canSummonFromPile && (
-                        <p className="event-pile-hint">
-                          Use Summoner to draw a card from the Event Pile.
-                        </p>
-                      )}
                       <EventPile
                         cardIds={state.eventPile}
-                        onPickCard={legalActions?.canSummonFromPile ? onSummonFromPile : undefined}
+                        onPickCard={
+                          legalActions?.canSummonFromPile
+                            ? (id) => {
+                                setPendingSummonCardId(id);
+                                setZoomedCard({ cardId: id });
+                              }
+                            : undefined
+                        }
                         pickable={!!legalActions?.canSummonFromPile}
                         onZoomCard={(id) => setZoomedCard({ cardId: id })}
                       />
@@ -249,6 +270,7 @@ export default function GameScreen({
               selectedCardId={selectedCardId}
               playableCardIds={legalActions?.playableCardIds ?? []}
               onSelectCard={setSelectedCardId}
+              onZoomCard={(id) => setZoomedCard({ cardId: id })}
             />
           </section>
 

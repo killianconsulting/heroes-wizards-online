@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import GameLogo from './GameLogo';
 import { MIN_PLAYERS, MAX_PLAYERS } from '@/data/constants';
@@ -20,11 +20,18 @@ export default function StartScreen({ onStart }: StartScreenProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { lobby } = useLobby();
-  const mode = searchParams.get('mode');
+  const modeFromUrl = searchParams.get('mode');
   const lobbyCodeFromUrl = searchParams.get('lobby');
 
+  // Local state so buttons update the view immediately (router.replace can be slow)
+  const [viewOverride, setViewOverride] = useState<StartView | null>(null);
+  useEffect(() => {
+    if (!modeFromUrl) setViewOverride(null);
+  }, [modeFromUrl]);
+
   const view: StartView =
-    mode === 'local' ? 'local' : mode === 'online' ? 'online' : 'choice';
+    viewOverride ??
+    (modeFromUrl === 'local' ? 'local' : modeFromUrl === 'online' ? 'online' : 'choice');
 
   const showLobbyScreen =
     view === 'online' &&
@@ -62,14 +69,20 @@ export default function StartScreen({ onStart }: StartScreenProps) {
           <div className="start-choice__buttons">
             <button
               type="button"
-              onClick={() => router.replace('/?mode=local')}
+              onClick={() => {
+                setViewOverride('local');
+                router.replace('/?mode=local');
+              }}
               className="start-choice__btn start-choice__btn--local"
             >
               Local
             </button>
             <button
               type="button"
-              onClick={() => router.replace('/?mode=online')}
+              onClick={() => {
+                setViewOverride('online');
+                router.replace('/?mode=online');
+              }}
               className="start-choice__btn start-choice__btn--online-active"
             >
               Online

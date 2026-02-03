@@ -53,6 +53,20 @@ describe('validation', () => {
       const legal = getLegalActions(stateWithSummoner);
       expect(legal.canSummonFromPile).toBe(false);
     });
+
+    it('canSummonFromPile is false when current player already has 5 cards in hand', () => {
+      const state = createGame(['Alice', 'Bob']);
+      const fullHand = [1, 2, 3, 4, 5];
+      const stateWithSummonerFullHand = {
+        ...state,
+        eventPile: [16],
+        players: state.players.map((p, i) =>
+          i === 0 ? { ...p, party: { ...p.party, wizard: 13 }, hand: fullHand } : p
+        ),
+      };
+      const legal = getLegalActions(stateWithSummonerFullHand);
+      expect(legal.canSummonFromPile).toBe(false);
+    });
   });
 
   describe('canPlayQuest', () => {

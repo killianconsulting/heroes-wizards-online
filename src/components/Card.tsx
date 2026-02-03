@@ -10,6 +10,7 @@ interface CardProps {
   /** Highlight as playable / selected */
   highlight?: boolean;
   onClick?: () => void;
+  onDoubleClick?: () => void;
   className?: string;
 }
 
@@ -20,6 +21,7 @@ export default function Card({
   faceDown = false,
   highlight = false,
   onClick,
+  onDoubleClick,
   className = '',
 }: CardProps) {
   const card = getCard(cardId);
@@ -30,9 +32,10 @@ export default function Card({
   return (
     <button
       type="button"
-      className={`card ${highlight ? 'card--highlight' : ''} ${onClick ? 'card--clickable' : ''} ${className}`}
+      className={`card ${highlight ? 'card--highlight' : ''} ${onClick || onDoubleClick ? 'card--clickable' : ''} ${className}`}
       onClick={onClick}
-      disabled={!onClick}
+      onDoubleClick={onDoubleClick}
+      disabled={!onClick && !onDoubleClick}
       aria-label={alt}
     >
       {hasImage ? (

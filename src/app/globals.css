@@ -48,6 +48,7 @@ html,
 body {
   max-width: 100vw;
   min-height: 100vh;
+  overflow-x: hidden;
   background-color: var(--bg-dark);
   background-image: url('/images/hw_background.jpeg');
   background-size: cover;
@@ -904,14 +905,6 @@ body {
   gap: 0.35rem;
 }
 
-.event-pile-hint {
-  font-size: 0.85rem;
-  color: var(--accent-wizard);
-  margin: 0;
-  text-align: center;
-  max-width: 200px;
-}
-
 .game-table__bottom {
   display: flex;
   justify-content: center;
@@ -1068,6 +1061,40 @@ body {
 
 .card-zoom__card .card__placeholder-type {
   font-size: 0.9rem;
+}
+
+.card-zoom__actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+  margin-top: 1rem;
+  flex-wrap: wrap;
+}
+
+.card-zoom__confirm,
+.card-zoom__close-btn {
+  padding: 0.5rem 1rem;
+  font: inherit;
+  font-size: 1rem;
+  border-radius: 0.4rem;
+  cursor: pointer;
+  border: 2px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+}
+
+.card-zoom__confirm {
+  /* Match Draw Card button (action-bar__btn--draw) */
+  background: var(--accent-wizard);
+  color: white;
+  border: none;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.card-zoom__confirm:hover,
+.card-zoom__close-btn:hover {
+  filter: brightness(1.1);
 }
 
 /* ----- Leave game confirmation modal ----- */
