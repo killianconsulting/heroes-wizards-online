@@ -11,7 +11,7 @@ import {
   ReactNode,
 } from 'react';
 import { useLobby } from '@/context/LobbyContext';
-import { subscribeToGameChannel, broadcastGameState, sendAction as sendActionToChannel, applyAction } from '@/lib/gameSync';
+import { subscribeToGameChannel, broadcastGameStart, broadcastGameState, sendAction as sendActionToChannel, applyAction } from '@/lib/gameSync';
 import type { GameState } from '@/engine/state';
 import type { GameAction } from '@/lib/gameSync';
 import { isSupabaseConfigured } from '@/lib/supabase';
@@ -69,10 +69,16 @@ export function OnlineGameProvider({ children }: { children: ReactNode }) {
     return idx >= 0 ? idx : -1;
   }, [playerId, playerOrder]);
 
-  const startOnlineGameAsHost = useCallback((state: GameState, order: string[]) => {
-    setGameState(state);
-    setPlayerOrder(order);
-  }, []);
+  const gameChannelRef = useRef<{ send: (args: object) => Promise<unknown> } | null>(null);
+
+  const startOnlineGameAsHost = useCallback(
+    (state: GameState, order: string[]) => {
+      setGameState(state);
+      setPlayerOrder(order);
+      if (lobbyId) broadcastGameStart(lobbyId, state, order, gameChannelRef.current);
+    },
+    [lobbyId]
+  );
 
   const leaveOnlineGame = useCallback(() => {
     setGameState(null);
@@ -84,7 +90,7 @@ export function OnlineGameProvider({ children }: { children: ReactNode }) {
       if (!gameState || !lobbyId || !isHost) return;
       const next = applyAction(gameState, action);
       setGameState(next);
-      await broadcastGameState(lobbyId, next);
+      await broadcastGameState(lobbyId, next, gameChannelRef.current);
     },
     [gameState, lobbyId, isHost]
   );
@@ -92,7 +98,7 @@ export function OnlineGameProvider({ children }: { children: ReactNode }) {
   const sendAction = useCallback(
     async (action: GameAction) => {
       if (!lobbyId || myPlayerIndex < 0 || isHost) return;
-      await sendActionToChannel(lobbyId, myPlayerIndex, action);
+      await sendActionToChannel(lobbyId, myPlayerIndex, action, gameChannelRef.current);
     },
     [lobbyId, myPlayerIndex, isHost]
   );
@@ -118,9 +124,10 @@ export function OnlineGameProvider({ children }: { children: ReactNode }) {
             if (!current || payload.fromPlayerIndex !== current.currentPlayerIndex) return;
             const next = applyAction(current, payload.action);
             setGameState(next);
-            broadcastGameState(lobbyId, next);
+            broadcastGameState(lobbyId, next, gameChannelRef.current);
           }
         : undefined,
+      channelRef: gameChannelRef,
     });
 
     return unsubscribe;

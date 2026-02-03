@@ -444,7 +444,7 @@ body {
 }
 
 .lobby-screen__code-label {
-  color: var(--text-muted);
+  color: rgba(255, 255, 255, 1) !important;
   margin-right: 0.5rem;
 }
 
@@ -452,12 +452,12 @@ body {
   font-weight: 700;
   font-size: 1.5rem;
   letter-spacing: 0.15em;
-  color: var(--highlight);
+  color: rgba(255, 255, 255, 1) !important;
 }
 
 .lobby-screen__invite-text {
   font-size: 0.9rem;
-  color: var(--text-muted);
+  color: rgba(255, 255, 255, 1) !important;
   margin: 0 0 0.5rem;
 }
 
@@ -597,7 +597,7 @@ body {
 
 .lobby-screen__hint {
   font-size: 0.9rem;
-  color: var(--text-muted);
+  color: rgba(255, 255, 255, 1) !important;
   margin-top: 1rem;
   text-align: center;
 }

@@ -40,6 +40,9 @@ function getChannelName(lobbyId: string): string {
   return `${CHANNEL_PREFIX}${lobbyId}`;
 }
 
+/** Ref to store the subscription channel so host/client can send on it without removeChannel. */
+type GameChannelRef = { current: { send: (args: object) => Promise<unknown> } | null };
+
 /** Subscribe to game channel; callbacks for game_start, game_state; host can pass onAction to apply incoming actions and broadcast new state. */
 export function subscribeToGameChannel(
   lobbyId: string,
@@ -47,6 +50,8 @@ export function subscribeToGameChannel(
     onGameStart: (payload: GameStartPayload) => void;
     onGameState: (payload: GameStatePayload) => void;
     onAction?: (payload: ActionPayload) => void;
+    /** When provided, store the subscription channel here so host/client can send on it without removeChannel. */
+    channelRef?: GameChannelRef;
   }
 ): () => void {
   if (!supabase) return () => {};
@@ -54,6 +59,7 @@ export function subscribeToGameChannel(
   // Store in const so TypeScript knows it's not null in closures
   const client = supabase;
   const channel = client.channel(getChannelName(lobbyId), { config: { broadcast: { self: true } } });
+  if (callbacks.channelRef) callbacks.channelRef.current = channel;
 
   channel
     .on('broadcast', { event: 'game_start' }, ({ payload }) => {
@@ -68,20 +74,28 @@ export function subscribeToGameChannel(
     .subscribe();
 
   return () => {
+    if (callbacks.channelRef) callbacks.channelRef.current = null;
     client.removeChannel(channel);
   };
 }
 
-/** Broadcast game start (state + playerOrder). Host calls after creating game. */
+/** Broadcast game start (state + playerOrder). Pass existingChannel to send on subscription channel and avoid removing it. */
 export async function broadcastGameStart(
   lobbyId: string,
   state: GameState,
-  playerOrder: string[]
+  playerOrder: string[],
+  existingChannel?: { send: (args: object) => Promise<unknown> } | null
 ): Promise<void> {
-  if (!supabase) return;
-  
-  // Store in const so TypeScript knows it's not null
-  const client = supabase;
+  if (!supabase && !existingChannel) return;
+  if (existingChannel) {
+    await existingChannel.send({
+      type: 'broadcast',
+      event: 'game_start',
+      payload: { state, playerOrder },
+    });
+    return;
+  }
+  const client = supabase!;
   const channel = client.channel(getChannelName(lobbyId), { config: { broadcast: { self: true } } });
   await channel.send({
     type: 'broadcast',
@@ -91,12 +105,22 @@ export async function broadcastGameStart(
   client.removeChannel(channel);
 }
 
-/** Broadcast new game state. Host calls after applying an action. */
-export async function broadcastGameState(lobbyId: string, state: GameState): Promise<void> {
-  if (!supabase) return;
-  
-  // Store in const so TypeScript knows it's not null
-  const client = supabase;
+/** Broadcast new game state. Pass existingChannel to send on subscription channel and avoid removing it. */
+export async function broadcastGameState(
+  lobbyId: string,
+  state: GameState,
+  existingChannel?: { send: (args: object) => Promise<unknown> } | null
+): Promise<void> {
+  if (!supabase && !existingChannel) return;
+  if (existingChannel) {
+    await existingChannel.send({
+      type: 'broadcast',
+      event: 'game_state',
+      payload: { state },
+    });
+    return;
+  }
+  const client = supabase!;
   const channel = client.channel(getChannelName(lobbyId), { config: { broadcast: { self: true } } });
   await channel.send({
     type: 'broadcast',
@@ -106,22 +130,22 @@ export async function broadcastGameState(lobbyId: string, state: GameState): Pro
   client.removeChannel(channel);
 }
 
-/** Send an action (non-host calls). Host receives via onAction, applies, then broadcasts game_state. */
+/** Send an action (non-host calls). Pass existingChannel to send on subscription channel and avoid removing it. */
 export async function sendAction(
   lobbyId: string,
   fromPlayerIndex: number,
-  action: GameAction
+  action: GameAction,
+  existingChannel?: { send: (args: object) => Promise<unknown> } | null
 ): Promise<void> {
-  if (!supabase) return;
-  
-  // Store in const so TypeScript knows it's not null
-  const client = supabase;
+  if (!supabase && !existingChannel) return;
+  const payload = { type: 'broadcast' as const, event: 'action' as const, payload: { action, fromPlayerIndex } };
+  if (existingChannel) {
+    await existingChannel.send(payload);
+    return;
+  }
+  const client = supabase!;
   const channel = client.channel(getChannelName(lobbyId), { config: { broadcast: { self: true } } });
-  await channel.send({
-    type: 'broadcast',
-    event: 'action',
-    payload: { action, fromPlayerIndex },
-  });
+  await channel.send(payload);
   client.removeChannel(channel);
 }
 

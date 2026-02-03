@@ -10,7 +10,6 @@ import PlayerAvatarIcon from './PlayerAvatarIcon';
 import { MAX_PLAYERS } from '@/data/constants';
 import { leaveLobby as leaveLobbySupabase } from '@/lib/lobby';
 import { createGame } from '@/engine/setup';
-import { broadcastGameStart } from '@/lib/gameSync';
 
 interface LobbyScreenProps {
   onStartGame?: (playerNames: string[]) => void;
@@ -74,14 +73,13 @@ export default function LobbyScreen({ onStartGame }: LobbyScreenProps) {
     onStartGame(names);
   }, [lobby, onStartGame]);
 
-  const confirmStartGame = useCallback(async () => {
+  const confirmStartGame = useCallback(() => {
     if (!lobby) return;
     setShowStartWarning(false);
     if (lobby.lobbyId) {
       const names = lobby.players.map((p) => p.name);
       const playerOrder = lobby.players.map((p) => p.id);
       const state = createGame(names);
-      await broadcastGameStart(lobby.lobbyId, state, playerOrder);
       startOnlineGameAsHost(state, playerOrder);
     } else if (onStartGame) {
       onStartGame(lobby.players.map((p) => p.name));
@@ -108,7 +106,7 @@ export default function LobbyScreen({ onStartGame }: LobbyScreenProps) {
       </button>
 
       <div className="lobby-screen__code">
-        <span className="lobby-screen__code-label">Lobby code:</span>
+        <span className="lobby-screen__code-label">Lobby Code:</span>
         <span className="lobby-screen__code-value" aria-label={`Lobby code ${lobby.lobbyCode}`}>
           {lobby.lobbyCode}
         </span>
