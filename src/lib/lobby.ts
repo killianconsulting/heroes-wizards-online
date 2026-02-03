@@ -195,8 +195,11 @@ export function subscribeToLobbyPlayers(
 ): () => void {
   if (!supabase) return () => {};
 
+  // Store in const so TypeScript knows it's not null in closures
+  const client = supabase;
+
   const fetchPlayers = async () => {
-    const { data } = await supabase
+    const { data } = await client
       .from('lobby_players')
       .select('id, name, is_host')
       .eq('lobby_id', lobbyId)
@@ -206,7 +209,7 @@ export function subscribeToLobbyPlayers(
 
   fetchPlayers();
 
-  const channel = supabase
+  const channel = client
     .channel(`lobby:${lobbyId}`)
     .on(
       'postgres_changes',
@@ -223,6 +226,6 @@ export function subscribeToLobbyPlayers(
     .subscribe();
 
   return () => {
-    supabase.removeChannel(channel);
+    client.removeChannel(channel);
   };
 }
