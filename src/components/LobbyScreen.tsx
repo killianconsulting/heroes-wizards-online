@@ -4,9 +4,12 @@ import { useCallback, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import GameLogo from './GameLogo';
 import { useLobby } from '@/context/LobbyContext';
+import { useOnlineGame } from '@/context/OnlineGameContext';
 import PlayerAvatarIcon from './PlayerAvatarIcon';
 import { MAX_PLAYERS } from '@/data/constants';
 import { leaveLobby as leaveLobbySupabase } from '@/lib/lobby';
+import { createGame } from '@/engine/setup';
+import { broadcastGameStart } from '@/lib/gameSync';
 
 interface LobbyScreenProps {
   onStartGame?: (playerNames: string[]) => void;
@@ -15,6 +18,7 @@ interface LobbyScreenProps {
 export default function LobbyScreen({ onStartGame }: LobbyScreenProps) {
   const router = useRouter();
   const { lobby, leaveLobby } = useLobby();
+  const { startOnlineGameAsHost } = useOnlineGame();
   const [copied, setCopied] = useState(false);
   const [showStartWarning, setShowStartWarning] = useState(false);
 
@@ -54,11 +58,19 @@ export default function LobbyScreen({ onStartGame }: LobbyScreenProps) {
     onStartGame(names);
   }, [lobby, onStartGame]);
 
-  const confirmStartGame = useCallback(() => {
-    if (!lobby || !onStartGame) return;
+  const confirmStartGame = useCallback(async () => {
+    if (!lobby) return;
     setShowStartWarning(false);
-    onStartGame(lobby.players.map((p) => p.name));
-  }, [lobby, onStartGame]);
+    if (lobby.lobbyId) {
+      const names = lobby.players.map((p) => p.name);
+      const playerOrder = lobby.players.map((p) => p.id);
+      const state = createGame(names);
+      await broadcastGameStart(lobby.lobbyId, state, playerOrder);
+      startOnlineGameAsHost(state, playerOrder);
+    } else if (onStartGame) {
+      onStartGame(lobby.players.map((p) => p.name));
+    }
+  }, [lobby, onStartGame, startOnlineGameAsHost]);
 
   if (!lobby) return null;
 
@@ -157,13 +169,10 @@ export default function LobbyScreen({ onStartGame }: LobbyScreenProps) {
         >
           <div className="lobby-screen__start-warning-content" onClick={(e) => e.stopPropagation()}>
             <h2 id="lobby-start-warning-title" className="lobby-screen__start-warning-title">
-              Online game sync not ready yet
+              Start game for all players?
             </h2>
             <p className="lobby-screen__start-warning-text">
-              The game will only start on your device. Other players will stay in the lobby and won&apos;t see the game. Full online play is coming in a future update.
-            </p>
-            <p className="lobby-screen__start-warning-text">
-              To play together right now, use <strong>Local</strong> mode on one device.
+              The game will start for everyone in the lobby. All players will see the same game.
             </p>
             <div className="lobby-screen__start-warning-actions">
               <button
@@ -178,7 +187,7 @@ export default function LobbyScreen({ onStartGame }: LobbyScreenProps) {
                 onClick={confirmStartGame}
                 className="lobby-screen__btn lobby-screen__btn--start"
               >
-                Start on my device anyway
+                Start game
               </button>
             </div>
           </div>

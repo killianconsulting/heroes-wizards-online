@@ -32,8 +32,19 @@ interface GameScreenProps {
   onDismissFortuneReading: () => void;
   onDismissEventBlocked: () => void;
   onLeaveGame: () => void;
+  /** Online mode: this client's player index; only show this hand and enable actions when it's this player's turn. */
+  myPlayerIndex?: number;
 }
 
+
+const EMPTY_LEGAL: ReturnType<typeof import('@/engine/validation').getLegalActions> = {
+  canDraw: false,
+  canDump: false,
+  playableCardIds: [],
+  canPlayEagles: false,
+  canSummonFromPile: false,
+  canPassTurn: false,
+};
 
 export default function GameScreen({
   state,
@@ -47,6 +58,7 @@ export default function GameScreen({
   onDismissFortuneReading,
   onDismissEventBlocked,
   onLeaveGame,
+  myPlayerIndex,
 }: GameScreenProps) {
   const [selectedCardId, setSelectedCardId] = useState<number | null>(null);
   const [pendingEvent, setPendingEvent] = useState<{ cardId: number; eventId: EventId } | null>(
@@ -61,16 +73,21 @@ export default function GameScreen({
 
   const currentIndex = state.currentPlayerIndex;
   const currentPlayer = state.players[currentIndex];
+  /** Online: show my hand and enable actions only on my turn. Local: show current player's hand, always enable. */
+  const displayIndex = myPlayerIndex !== undefined ? myPlayerIndex : currentIndex;
+  const isMyTurn = myPlayerIndex === undefined ? true : currentIndex === myPlayerIndex;
+  const displayPlayer = state.players[displayIndex];
+  const effectiveLegal = isMyTurn ? legalActions : EMPTY_LEGAL;
 
-  /** Clear selection when the selected card is no longer in the current player's hand (e.g. after turn/hand change). */
+  /** Clear selection when the selected card is no longer in the displayed player's hand (e.g. after turn/hand change). */
   useEffect(() => {
     if (
       selectedCardId !== null &&
-      !currentPlayer.hand.includes(selectedCardId)
+      !displayPlayer.hand.includes(selectedCardId)
     ) {
       setSelectedCardId(null);
     }
-  }, [state.currentPlayerIndex, currentPlayer.hand, selectedCardId]);
+  }, [displayIndex, displayPlayer.hand, selectedCardId]);
 
   const handlePlayClick = useCallback(() => {
     if (selectedCardId === null || !legalActions.playableCardIds.includes(selectedCardId)) return;
@@ -81,7 +98,7 @@ export default function GameScreen({
     }
     onPlayCard(selectedCardId);
     setSelectedCardId(null);
-  }, [selectedCardId, legalActions.playableCardIds, onPlayCard]);
+  }, [selectedCardId, effectiveLegal.playableCardIds, onPlayCard]);
 
   const handleTargetSelected = useCallback(
     (target: EventTarget) => {
@@ -172,26 +189,26 @@ export default function GameScreen({
       ) : (
         <>
           <section className="game-table">
-            {/* Table layout for local play: active player bottom, others around (clockwise). Online multiplayer will not rotate. */}
+            {/* Local: current player at bottom. Online: my seat (displayIndex) at bottom. */}
             <div className="game-table__table">
-              {/* Top: players opposite current (4th in 4p, 4th & 5th in 5p; in 2p the other player) */}
+              {/* Top: players opposite the bottom seat */}
               <div className="game-table__top">
                 {(() => {
                   const N = state.players.length;
                   const topIndices =
                     N === 2
-                      ? [(currentIndex + 1) % 2]
+                      ? [(displayIndex + 1) % 2]
                       : N === 4
-                        ? [(currentIndex + 2) % 4]
+                        ? [(displayIndex + 2) % 4]
                         : N === 5
-                          ? [(currentIndex + 2) % 5, (currentIndex + 3) % 5]
+                          ? [(displayIndex + 2) % 5, (displayIndex + 3) % 5]
                           : [];
                   return topIndices.map((i) => (
                     <div key={state.players[i].id} className="game-table__party-wrap game-table__party-wrap--top">
                       <PartyDisplay
                         party={state.players[i].party}
                         playerName={state.players[i].name}
-                        isCurrent={false}
+                        isCurrent={i === currentIndex}
                         onZoomCard={(id) => setZoomedCard({ cardId: id })}
                       />
                     </div>
@@ -203,13 +220,13 @@ export default function GameScreen({
               <div className="game-table__middle">
                 <div className="game-table__left">
                   {state.players.length >= 3 && (() => {
-                    const i = (currentIndex + 1) % state.players.length;
+                    const i = (displayIndex + 1) % state.players.length;
                     return (
                       <div className="game-table__party-wrap game-table__party-wrap--left">
                         <PartyDisplay
                           party={state.players[i].party}
                           playerName={state.players[i].name}
-                          isCurrent={false}
+                          isCurrent={i === currentIndex}
                           onZoomCard={(id) => setZoomedCard({ cardId: id })}
                         />
                       </div>
@@ -220,7 +237,7 @@ export default function GameScreen({
                   <div className="game-table__deck-event">
                     <Deck
                       count={state.deck.length}
-                      canDraw={legalActions?.canDraw ?? false}
+                      canDraw={effectiveLegal?.canDraw ?? false}
                       onDraw={onDraw}
                       onZoomCard={(id, faceDown) => setZoomedCard({ cardId: id, faceDown })}
                     />
@@ -228,14 +245,14 @@ export default function GameScreen({
                       <EventPile
                         cardIds={state.eventPile}
                         onPickCard={
-                          legalActions?.canSummonFromPile
+                          effectiveLegal?.canSummonFromPile
                             ? (id) => {
                                 setPendingSummonCardId(id);
                                 setZoomedCard({ cardId: id });
                               }
                             : undefined
                         }
-                        pickable={!!legalActions?.canSummonFromPile}
+                        pickable={!!effectiveLegal?.canSummonFromPile}
                         onZoomCard={(id) => setZoomedCard({ cardId: id })}
                       />
                     </div>
@@ -243,13 +260,13 @@ export default function GameScreen({
                 </div>
                 <div className="game-table__right">
                   {state.players.length >= 3 && (() => {
-                    const i = (currentIndex + state.players.length - 1) % state.players.length;
+                    const i = (displayIndex + state.players.length - 1) % state.players.length;
                     return (
                       <div className="game-table__party-wrap game-table__party-wrap--right">
                         <PartyDisplay
                           party={state.players[i].party}
                           playerName={state.players[i].name}
-                          isCurrent={false}
+                          isCurrent={i === currentIndex}
                           onZoomCard={(id) => setZoomedCard({ cardId: id })}
                         />
                       </div>
@@ -258,14 +275,14 @@ export default function GameScreen({
                 </div>
               </div>
 
-              {/* Bottom: active player (current turn) */}
+              {/* Bottom: my seat (local = current player, online = me) */}
               <div className="game-table__bottom">
                 <div className="game-table__party-wrap game-table__party-wrap--bottom">
                   <PartyDisplay
-                    key={state.players[currentIndex].id}
-                    party={currentPlayer.party}
-                    playerName={currentPlayer.name}
-                    isCurrent={true}
+                    key={state.players[displayIndex].id}
+                    party={displayPlayer.party}
+                    playerName={displayPlayer.name}
+                    isCurrent={displayIndex === currentIndex}
                     onZoomCard={(id) => setZoomedCard({ cardId: id })}
                   />
                 </div>
@@ -274,11 +291,11 @@ export default function GameScreen({
           </section>
 
           <section className="game-hand">
-            <h2 className="game-hand__title">{currentPlayer.name}&apos;s Hand</h2>
+            <h2 className="game-hand__title">{displayPlayer.name}&apos;s Hand</h2>
             <Hand
-              cardIds={currentPlayer.hand}
+              cardIds={displayPlayer.hand}
               selectedCardId={selectedCardId}
-              playableCardIds={legalActions?.playableCardIds ?? []}
+              playableCardIds={effectiveLegal?.playableCardIds ?? []}
               onSelectCard={setSelectedCardId}
               onZoomCard={(id) => setZoomedCard({ cardId: id })}
             />
@@ -286,14 +303,14 @@ export default function GameScreen({
 
           <section className="game-actions">
             <ActionBar
-              legal={legalActions!}
+              legal={effectiveLegal}
               selectedCardId={selectedCardId}
               onDraw={onDraw}
               onPassTurn={onPassTurn}
               onPlay={handlePlayClick}
               onDump={onDumpCard}
               onSummon={onSummonFromPile}
-              isCurrentTurn={true}
+              isCurrentTurn={isMyTurn}
               onlyPassAvailable={state.actedThisTurn}
             />
           </section>

@@ -3,6 +3,7 @@ import { Londrina_Solid, Source_Sans_3 } from 'next/font/google';
 import './globals.css';
 import { LeaveGameProvider } from '@/context/LeaveGameContext';
 import { LobbyProvider } from '@/context/LobbyContext';
+import { OnlineGameProvider } from '@/context/OnlineGameContext';
 import Footer from '@/components/Footer';
 
 const londrinaSolid = Londrina_Solid({
@@ -56,8 +57,10 @@ export default function RootLayout({
         <style dangerouslySetInnerHTML={{ __html: criticalStyles }} />
         <LeaveGameProvider>
           <LobbyProvider>
-            <div className="layout-main">{children}</div>
-            <Footer />
+            <OnlineGameProvider>
+              <div className="layout-main">{children}</div>
+              <Footer />
+            </OnlineGameProvider>
           </LobbyProvider>
         </LeaveGameProvider>
       </body>
