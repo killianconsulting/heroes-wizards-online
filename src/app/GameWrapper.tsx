@@ -1,29 +1,39 @@
 'use client';
 
 import { useCallback, useEffect, Suspense } from 'react';
+import { useRouter } from 'next/navigation';
 import { useGameState } from '@/hooks/useGameState';
 import { useLeaveGame } from '@/context/LeaveGameContext';
+import { useLobby } from '@/context/LobbyContext';
 import { useOnlineGame } from '@/context/OnlineGameContext';
 import { getLegalActions } from '@/engine/validation';
+import { leaveLobby as leaveLobbySupabase } from '@/lib/lobby';
 import StartScreen from '@/components/StartScreen';
 import GameScreen from '@/components/GameScreen';
 import WinScreen from '@/components/WinScreen';
 
 export default function GameWrapper() {
+  const router = useRouter();
   const local = useGameState();
   const online = useOnlineGame();
+  const { lobby, leaveLobby } = useLobby();
   const { registerLeaveGame } = useLeaveGame();
 
   const state = online.gameState ?? local.state;
   const inGame = !!state && !state.winnerPlayerId;
 
-  const handleLeaveGame = useCallback(() => {
+  const handleLeaveGame = useCallback(async () => {
     if (online.gameState) {
-      online.leaveOnlineGame();
+      await online.notifyPlayerLeftAndLeave();
+      if (lobby?.lobbyId && lobby?.playerId) {
+        await leaveLobbySupabase(lobby.lobbyId, lobby.playerId);
+      }
+      leaveLobby();
+      router.replace('/?mode=online');
     } else {
       local.reset();
     }
-  }, [online.gameState, online.leaveOnlineGame, local.reset]);
+  }, [online.gameState, online.notifyPlayerLeftAndLeave, lobby?.lobbyId, lobby?.playerId, leaveLobby, router, local.reset]);
 
   useEffect(() => {
     registerLeaveGame(inGame, handleLeaveGame);
@@ -38,11 +48,14 @@ export default function GameWrapper() {
     );
   }
 
-  if (state.winnerPlayerId) {
-    const winner = state.players.find((p) => p.id === state.winnerPlayerId);
+  if (state.phase === 'gameOver') {
+    const winner = state.winnerPlayerId
+      ? state.players.find((p) => p.id === state.winnerPlayerId)
+      : null;
     return (
       <WinScreen
-        winnerName={winner?.name ?? 'Unknown'}
+        winnerName={winner?.name ?? null}
+        playerLeft={!state.winnerPlayerId}
         onNewGame={handleLeaveGame}
       />
     );

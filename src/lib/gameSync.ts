@@ -34,32 +34,47 @@ export interface ActionPayload {
   fromPlayerIndex: number;
 }
 
+export interface PlayerLeftPayload {
+  playerIndex: number;
+  playerId: string;
+}
+
 const CHANNEL_PREFIX = 'game:';
 
 function getChannelName(lobbyId: string): string {
   return `${CHANNEL_PREFIX}${lobbyId}`;
 }
 
-/** Ref to store the subscription channel so host/client can send on it without removeChannel. */
-type GameChannelRef = { current: { send: (args: object) => Promise<unknown> } | null };
+/** Ref to store the subscription channel so host/client can send on it and track presence. */
+type GameChannelRef = {
+  current: {
+    send: (args: object) => Promise<unknown>;
+    track?: (payload: Record<string, unknown>) => void;
+  } | null;
+};
 
-/** Subscribe to game channel; callbacks for game_start, game_state; host can pass onAction to apply incoming actions and broadcast new state. */
+/** Subscribe to game channel; callbacks for game_start, game_state, player_left; host can pass onAction/onPlayerLeft to apply and broadcast. */
 export function subscribeToGameChannel(
   lobbyId: string,
   callbacks: {
     onGameStart: (payload: GameStartPayload) => void;
     onGameState: (payload: GameStatePayload) => void;
     onAction?: (payload: ActionPayload) => void;
-    /** When provided, store the subscription channel here so host/client can send on it without removeChannel. */
+    /** Host: when a player leaves (abandon or disconnect), apply and broadcast. */
+    onPlayerLeft?: (payload: PlayerLeftPayload) => void;
+    /** When provided, store the subscription channel here so host/client can send on it and track presence. */
     channelRef?: GameChannelRef;
   }
 ): () => void {
   if (!supabase) return () => {};
   
-  // Store in const so TypeScript knows it's not null in closures
   const client = supabase;
-  const channel = client.channel(getChannelName(lobbyId), { config: { broadcast: { self: true } } });
-  if (callbacks.channelRef) callbacks.channelRef.current = channel;
+  const channel = client.channel(getChannelName(lobbyId), {
+    config: { broadcast: { self: true }, presence: { key: '' } },
+  });
+  if (callbacks.channelRef) {
+    callbacks.channelRef.current = channel as GameChannelRef['current'];
+  }
 
   channel
     .on('broadcast', { event: 'game_start' }, ({ payload }) => {
@@ -70,6 +85,19 @@ export function subscribeToGameChannel(
     })
     .on('broadcast', { event: 'action' }, ({ payload }) => {
       callbacks.onAction?.(payload as ActionPayload);
+    })
+    .on('broadcast', { event: 'player_left' }, ({ payload }) => {
+      callbacks.onPlayerLeft?.(payload as PlayerLeftPayload);
+    })
+    .on('presence', { event: 'leave' }, ({ leftPresences }) => {
+      if (!callbacks.onPlayerLeft) return;
+      leftPresences.forEach((presence: Record<string, unknown>) => {
+        const playerIndex = presence.playerIndex as number | undefined;
+        const playerId = presence.playerId as string | undefined;
+        if (typeof playerIndex === 'number' && typeof playerId === 'string') {
+          callbacks.onPlayerLeft!({ playerIndex, playerId });
+        }
+      });
     })
     .subscribe();
 
@@ -139,6 +167,29 @@ export async function sendAction(
 ): Promise<void> {
   if (!supabase && !existingChannel) return;
   const payload = { type: 'broadcast' as const, event: 'action' as const, payload: { action, fromPlayerIndex } };
+  if (existingChannel) {
+    await existingChannel.send(payload);
+    return;
+  }
+  const client = supabase!;
+  const channel = client.channel(getChannelName(lobbyId), { config: { broadcast: { self: true } } });
+  await channel.send(payload);
+  client.removeChannel(channel);
+}
+
+/** Broadcast that this player is leaving (abandon). Use existingChannel so subscription stays alive. Host applies playerLeft and broadcasts game_state. */
+export async function broadcastPlayerLeft(
+  lobbyId: string,
+  playerIndex: number,
+  playerId: string,
+  existingChannel?: { send: (args: object) => Promise<unknown> } | null
+): Promise<void> {
+  if (!supabase && !existingChannel) return;
+  const payload = {
+    type: 'broadcast' as const,
+    event: 'player_left' as const,
+    payload: { playerIndex, playerId },
+  };
   if (existingChannel) {
     await existingChannel.send(payload);
     return;

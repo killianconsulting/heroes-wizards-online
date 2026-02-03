@@ -228,3 +228,24 @@ export function summonFromEventPile(state: GameState, cardId: CardId): GameState
     actedThisTurn: true,
   };
 }
+
+/**
+ * Mark that a player left the game (disconnect or abandon). Ends the game:
+ * - If exactly one player remains, they win.
+ * - Otherwise (0 or 2+ remaining), game over with no winner (abandoned).
+ */
+export function playerLeft(state: GameState, leftPlayerIndex: number): GameState {
+  if (state.phase === 'gameOver' || state.winnerPlayerId) return state;
+  const remainingIndices = state.players
+    .map((_, i) => i)
+    .filter((i) => i !== leftPlayerIndex);
+  const winnerPlayerId =
+    remainingIndices.length === 1
+      ? state.players[remainingIndices[0]].id
+      : null;
+  return {
+    ...state,
+    phase: 'gameOver',
+    winnerPlayerId,
+  };
+}

@@ -11,8 +11,9 @@ import {
   ReactNode,
 } from 'react';
 import { useLobby } from '@/context/LobbyContext';
-import { subscribeToGameChannel, broadcastGameStart, broadcastGameState, sendAction as sendActionToChannel, applyAction } from '@/lib/gameSync';
+import { subscribeToGameChannel, broadcastGameStart, broadcastGameState, broadcastPlayerLeft, sendAction as sendActionToChannel, applyAction } from '@/lib/gameSync';
 import type { GameState } from '@/engine/state';
+import { playerLeft } from '@/engine/actions';
 import type { GameAction } from '@/lib/gameSync';
 import { isSupabaseConfigured } from '@/lib/supabase';
 
@@ -29,6 +30,8 @@ export interface OnlineGameContextValue {
   startOnlineGameAsHost: (state: GameState, playerOrder: string[]) => void;
   /** Clear online game state (e.g. leave game). */
   leaveOnlineGame: () => void;
+  /** Notify others that this player is leaving (broadcast player_left), then clear local state. Call before leaveOnlineGame when abandoning. */
+  notifyPlayerLeftAndLeave: () => Promise<void>;
   /** Host: apply an action and broadcast new state. */
   applyActionAndBroadcast: (action: GameAction) => void;
   /** Non-host: send an action to the channel for the host to apply. */
@@ -47,6 +50,7 @@ export function useOnlineGame(): OnlineGameContextValue {
       isHost: false,
       startOnlineGameAsHost: () => {},
       leaveOnlineGame: () => {},
+      notifyPlayerLeftAndLeave: async () => {},
       applyActionAndBroadcast: () => {},
       sendAction: async () => {},
     };
@@ -76,14 +80,25 @@ export function OnlineGameProvider({ children }: { children: ReactNode }) {
       setGameState(state);
       setPlayerOrder(order);
       if (lobbyId) broadcastGameStart(lobbyId, state, order, gameChannelRef.current);
+      if (playerId && gameChannelRef.current?.track) {
+        const idx = order.indexOf(playerId);
+        if (idx >= 0) gameChannelRef.current.track({ playerIndex: idx, playerId });
+      }
     },
-    [lobbyId]
+    [lobbyId, playerId]
   );
 
   const leaveOnlineGame = useCallback(() => {
     setGameState(null);
     setPlayerOrder([]);
   }, []);
+
+  const notifyPlayerLeftAndLeave = useCallback(async () => {
+    if (lobbyId && myPlayerIndex >= 0 && playerId) {
+      await broadcastPlayerLeft(lobbyId, myPlayerIndex, playerId, gameChannelRef.current);
+    }
+    leaveOnlineGame();
+  }, [lobbyId, myPlayerIndex, playerId, leaveOnlineGame]);
 
   const applyActionAndBroadcast = useCallback(
     async (action: GameAction) => {
@@ -114,6 +129,10 @@ export function OnlineGameProvider({ children }: { children: ReactNode }) {
       onGameStart: (payload) => {
         setGameState(payload.state);
         setPlayerOrder(payload.playerOrder);
+        const idx = payload.playerOrder.indexOf(playerId);
+        if (idx >= 0 && gameChannelRef.current?.track) {
+          gameChannelRef.current.track({ playerIndex: idx, playerId });
+        }
       },
       onGameState: (payload) => {
         setGameState(payload.state);
@@ -123,6 +142,15 @@ export function OnlineGameProvider({ children }: { children: ReactNode }) {
             const current = gameStateRef.current;
             if (!current || payload.fromPlayerIndex !== current.currentPlayerIndex) return;
             const next = applyAction(current, payload.action);
+            setGameState(next);
+            broadcastGameState(lobbyId, next, gameChannelRef.current);
+          }
+        : undefined,
+      onPlayerLeft: isHost
+        ? (payload) => {
+            const current = gameStateRef.current;
+            if (!current || current.phase === 'gameOver') return;
+            const next = playerLeft(current, payload.playerIndex);
             setGameState(next);
             broadcastGameState(lobbyId, next, gameChannelRef.current);
           }
@@ -141,6 +169,7 @@ export function OnlineGameProvider({ children }: { children: ReactNode }) {
       isHost,
       startOnlineGameAsHost,
       leaveOnlineGame,
+      notifyPlayerLeftAndLeave,
       applyActionAndBroadcast,
       sendAction,
     }),
@@ -151,6 +180,7 @@ export function OnlineGameProvider({ children }: { children: ReactNode }) {
       isHost,
       startOnlineGameAsHost,
       leaveOnlineGame,
+      notifyPlayerLeftAndLeave,
       applyActionAndBroadcast,
       sendAction,
     ]
