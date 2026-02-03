@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import GameLogo from './GameLogo';
 import { useLobby } from '@/context/LobbyContext';
 import { createLobby, joinLobby } from '@/lib/lobby';
@@ -12,13 +12,22 @@ const LOBBY_CODE_LENGTH = 4;
 
 export default function OnlineSetupScreen() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { setLobby, generateLobbyCode } = useLobby();
+  const lobbyFromUrl = searchParams.get('lobby')?.trim().toUpperCase().slice(0, LOBBY_CODE_LENGTH) ?? '';
   const [joinLobbyCode, setJoinLobbyCode] = useState('');
   const [joinName, setJoinName] = useState('');
   const [createName, setCreateName] = useState('');
   const [joinError, setJoinError] = useState('');
   const [createError, setCreateError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Pre-fill lobby code when user opens invite link (?mode=online&lobby=XXXX)
+  useEffect(() => {
+    if (lobbyFromUrl.length === LOBBY_CODE_LENGTH) {
+      setJoinLobbyCode(lobbyFromUrl);
+    }
+  }, [lobbyFromUrl]);
 
   const handleCreateLobby = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -101,7 +110,7 @@ export default function OnlineSetupScreen() {
   return (
     <main className="start-screen online-setup">
       <h1 className="start-title">
-        <GameLogo maxHeight={173} />
+        <GameLogo maxHeight={173} onClick={() => router.replace('/')} />
       </h1>
       <p className="start-subtitle">The Card Game of Strategy, Magic & Mischief!</p>
 

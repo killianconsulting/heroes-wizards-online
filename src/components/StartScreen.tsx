@@ -10,8 +10,10 @@ import OnlineSetupScreen from './OnlineSetupScreen';
 import LobbyScreen from './LobbyScreen';
 import { useLobby } from '@/context/LobbyContext';
 
+export type TurnWaitSeconds = 0 | 3 | 5;
+
 interface StartScreenProps {
-  onStart: (playerNames: string[]) => void;
+  onStart: (playerNames: string[], turnWaitSeconds?: TurnWaitSeconds) => void;
 }
 
 type StartView = 'choice' | 'local' | 'online';
@@ -42,6 +44,7 @@ export default function StartScreen({ onStart }: StartScreenProps) {
   const [names, setNames] = useState<string[]>(
     Array.from({ length: MIN_PLAYERS }, (_, i) => `Player ${i + 1}`)
   );
+  const [turnWaitSeconds, setTurnWaitSeconds] = useState<TurnWaitSeconds>(0);
 
   const updateCount = (n: number) => {
     const clamped = Math.min(MAX_PLAYERS, Math.max(MIN_PLAYERS, n));
@@ -55,14 +58,14 @@ export default function StartScreen({ onStart }: StartScreenProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onStart(names.slice(0, playerCount));
+    onStart(names.slice(0, playerCount), turnWaitSeconds);
   };
 
   if (view === 'choice') {
     return (
       <main className="start-screen">
         <h1 className="start-title">
-          <GameLogo maxHeight={173} />
+          <GameLogo maxHeight={173} onClick={() => router.replace('/')} />
         </h1>
         <p className="start-subtitle">The Card Game of Strategy, Magic & Mischief!</p>
         <div className="start-choice">
@@ -103,7 +106,7 @@ export default function StartScreen({ onStart }: StartScreenProps) {
   return (
     <main className="start-screen">
       <h1 className="start-title">
-        <GameLogo maxHeight={173} />
+        <GameLogo maxHeight={173} onClick={() => router.replace('/')} />
       </h1>
       <p className="start-subtitle">The Card Game of Strategy, Magic & Mischief!</p>
       <button
@@ -115,7 +118,7 @@ export default function StartScreen({ onStart }: StartScreenProps) {
         Change Mode
       </button>
       <form onSubmit={handleSubmit} className="start-form">
-        <label className="start-label start-label--center">
+        <label className="start-label start-label--center start-label--white">
           Number of Players (2–5)
           <div className="start-player-count">
             <button
@@ -139,6 +142,23 @@ export default function StartScreen({ onStart }: StartScreenProps) {
             >
               +
             </button>
+          </div>
+        </label>
+
+        <label className="start-label start-label--center start-label--white">
+          Set Wait Time For Pass Turn
+          <div className="start-wait-time" role="group" aria-label="Set wait time for pass turn">
+            {([0, 3, 5] as const).map((seconds) => (
+              <button
+                key={seconds}
+                type="button"
+                onClick={() => setTurnWaitSeconds(seconds)}
+                className={`start-wait-time__option ${turnWaitSeconds === seconds ? 'start-wait-time__option--active' : ''}`}
+                aria-pressed={turnWaitSeconds === seconds}
+              >
+                {seconds === 0 ? 'No wait' : `${seconds} seconds`}
+              </button>
+            ))}
           </div>
         </label>
 

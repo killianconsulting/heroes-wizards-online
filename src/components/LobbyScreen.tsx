@@ -16,6 +16,7 @@ export default function LobbyScreen({ onStartGame }: LobbyScreenProps) {
   const router = useRouter();
   const { lobby, leaveLobby } = useLobby();
   const [copied, setCopied] = useState(false);
+  const [showStartWarning, setShowStartWarning] = useState(false);
 
   const handleLeaveLobby = useCallback(async () => {
     if (lobby?.lobbyId && lobby?.playerId) {
@@ -41,14 +42,22 @@ export default function LobbyScreen({ onStartGame }: LobbyScreenProps) {
     }
   }, [inviteUrl]);
 
-  const handleStartGame = useCallback(() => {
+  const requestStartGame = useCallback(() => {
     if (!lobby || !onStartGame) return;
     const names = lobby.players.map((p) => p.name);
-    if (names.length < 2) {
-      // For now require at least 2; when backend exists host can start when ready
+    if (names.length < 2) return;
+    // Online lobby: game state is not synced yet—only the host would see the game.
+    if (lobby.lobbyId) {
+      setShowStartWarning(true);
       return;
     }
     onStartGame(names);
+  }, [lobby, onStartGame]);
+
+  const confirmStartGame = useCallback(() => {
+    if (!lobby || !onStartGame) return;
+    setShowStartWarning(false);
+    onStartGame(lobby.players.map((p) => p.name));
   }, [lobby, onStartGame]);
 
   if (!lobby) return null;
@@ -58,7 +67,7 @@ export default function LobbyScreen({ onStartGame }: LobbyScreenProps) {
   return (
     <main className="start-screen lobby-screen">
       <h1 className="start-title">
-        <GameLogo maxHeight={120} />
+        <GameLogo maxHeight={120} onClick={() => router.replace('/')} />
       </h1>
 
       <button
@@ -118,7 +127,7 @@ export default function LobbyScreen({ onStartGame }: LobbyScreenProps) {
       <div className="lobby-screen__actions">
         <button
           type="button"
-          onClick={handleStartGame}
+          onClick={requestStartGame}
           disabled={!canStart}
           className="lobby-screen__btn lobby-screen__btn--start"
           title={!canStart ? 'Need at least 2 players to start' : 'Start game'}
@@ -136,6 +145,44 @@ export default function LobbyScreen({ onStartGame }: LobbyScreenProps) {
 
       {lobby.isHost && lobby.players.length < 2 && (
         <p className="lobby-screen__hint">Waiting for players to join (need at least 2 to start).</p>
+      )}
+
+      {showStartWarning && (
+        <div
+          className="lobby-screen__start-warning"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="lobby-start-warning-title"
+          onClick={() => setShowStartWarning(false)}
+        >
+          <div className="lobby-screen__start-warning-content" onClick={(e) => e.stopPropagation()}>
+            <h2 id="lobby-start-warning-title" className="lobby-screen__start-warning-title">
+              Online game sync not ready yet
+            </h2>
+            <p className="lobby-screen__start-warning-text">
+              The game will only start on your device. Other players will stay in the lobby and won&apos;t see the game. Full online play is coming in a future update.
+            </p>
+            <p className="lobby-screen__start-warning-text">
+              To play together right now, use <strong>Local</strong> mode on one device.
+            </p>
+            <div className="lobby-screen__start-warning-actions">
+              <button
+                type="button"
+                onClick={() => setShowStartWarning(false)}
+                className="lobby-screen__btn lobby-screen__btn--leave"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmStartGame}
+                className="lobby-screen__btn lobby-screen__btn--start"
+              >
+                Start on my device anyway
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </main>
   );

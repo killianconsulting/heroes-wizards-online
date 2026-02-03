@@ -22,6 +22,8 @@ import GameLogo from './GameLogo';
 interface GameScreenProps {
   state: GameState;
   legalActions: ReturnType<typeof import('@/engine/validation').getLegalActions>;
+  /** When set, show pass-the-device countdown overlay (seconds left) instead of hand. */
+  passTurnCountdown: number | null;
   onDraw: () => void;
   onPassTurn: () => void;
   onPlayCard: (cardId: number, target?: EventTarget) => void;
@@ -36,6 +38,7 @@ interface GameScreenProps {
 export default function GameScreen({
   state,
   legalActions,
+  passTurnCountdown,
   onDraw,
   onPassTurn,
   onPlayCard,
@@ -159,6 +162,13 @@ export default function GameScreen({
             onCancel={handleTargetCancel}
           />
         </section>
+      ) : passTurnCountdown !== null ? (
+        <div className="game-pass-turn-overlay" role="status" aria-live="polite">
+          <p className="game-pass-turn-overlay__text">Pass the device to the next player</p>
+          <p className="game-pass-turn-overlay__countdown" aria-label={`${passTurnCountdown} seconds remaining`}>
+            {passTurnCountdown}
+          </p>
+        </div>
       ) : (
         <>
           <section className="game-table">

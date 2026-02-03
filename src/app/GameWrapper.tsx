@@ -11,6 +11,7 @@ export default function GameWrapper() {
   const {
     state,
     legalActions,
+    passTurnCountdown,
     startGame,
     reset,
     handleDraw,
@@ -51,6 +52,7 @@ export default function GameWrapper() {
     <GameScreen
       state={state}
       legalActions={legalActions!}
+      passTurnCountdown={passTurnCountdown}
       onDraw={handleDraw}
       onPassTurn={handlePassTurn}
       onPlayCard={handlePlayCard}

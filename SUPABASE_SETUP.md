@@ -103,6 +103,8 @@ If `alter publication supabase_realtime add table` fails (e.g. table already in 
 - Without Supabase env vars: lobby is local-only (create/join/leave only in this browser).
 - With Supabase env vars: create lobby and join lobby are stored in Supabase; players see each other in the same lobby in real time; leave removes you from the lobby in the DB.
 
+**Note:** Only the **lobby** is synced (who’s in the room, join/leave). **Game state is not synced yet.** When the host clicks “Start Game,” a warning explains that the game will only start on the host’s device; other players stay in the lobby. Full online play (shared game state) is planned for a later update. To play together now, use **Local** mode on one device.
+
 ---
 
 ## Troubleshooting
