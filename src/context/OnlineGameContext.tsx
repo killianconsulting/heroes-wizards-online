@@ -147,7 +147,13 @@ export function OnlineGameProvider({ children }: { children: ReactNode }) {
       },
       onGameState: (payload) => {
         setGameState(payload.state);
-        if (payload.playerOrder) setPlayerOrder(payload.playerOrder);
+        if (payload.playerOrder) {
+          setPlayerOrder(payload.playerOrder);
+          const idx = payload.playerOrder.indexOf(playerId);
+          if (idx >= 0 && gameChannelRef.current?.track) {
+            gameChannelRef.current.track({ playerIndex: idx, playerId });
+          }
+        }
       },
       onAction: isHost
         ? (payload) => {
