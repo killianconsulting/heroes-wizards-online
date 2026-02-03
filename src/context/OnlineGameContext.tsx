@@ -73,7 +73,7 @@ export function OnlineGameProvider({ children }: { children: ReactNode }) {
     return idx >= 0 ? idx : -1;
   }, [playerId, playerOrder]);
 
-  const gameChannelRef = useRef<{ send: (args: object) => Promise<unknown> } | null>(null);
+  const gameChannelRef = useRef<{ send: (args: object) => Promise<unknown>; track?: (payload: Record<string, unknown>) => void } | null>(null);
 
   const startOnlineGameAsHost = useCallback(
     (state: GameState, order: string[]) => {
