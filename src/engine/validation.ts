@@ -8,6 +8,7 @@ import { isHeroCard, isWizardCard, isEventCard, isQuestCard } from '@/data/types
 import { MAX_HAND_SIZE, QUEST_SKILL_THRESHOLD, SPELLCASTER_QUEST_THRESHOLD } from '@/data/constants';
 import type { GameState, Party } from './state';
 import type { Skill } from '@/data/constants';
+import { isPlayerInactive } from './events';
 
 export interface LegalActions {
   canDraw: boolean;
@@ -82,22 +83,29 @@ export function canPlayEagles(state: GameState): boolean {
   return state.deck.length === 0;
 }
 
+const EMPTY_LEGAL: LegalActions = {
+  canDraw: false,
+  canDump: false,
+  playableCardIds: [],
+  canPlayEagles: false,
+  canSummonFromPile: false,
+  canPassTurn: false,
+};
+
 /**
  * Get all legal actions for the current player.
+ * Returns no actions if the current player is inactive (disconnected/left) — their turn is skipped.
  */
 export function getLegalActions(state: GameState): LegalActions {
   const playableCardIds: number[] = [];
   let eaglesPlayable = false;
 
   if (state.phase !== 'chooseAction' || state.winnerPlayerId) {
-    return {
-      canDraw: false,
-      canDump: false,
-      playableCardIds: [],
-      canPlayEagles: false,
-      canSummonFromPile: false,
-      canPassTurn: false,
-    };
+    return EMPTY_LEGAL;
+  }
+
+  if (isPlayerInactive(state, state.currentPlayerIndex)) {
+    return EMPTY_LEGAL;
   }
 
   /** After playing/dumping/summoning, only Pass turn is allowed. */

@@ -9,7 +9,7 @@ import type { HeroType } from '@/data/constants';
 import type { GameState, Party } from './state';
 import type { CardId } from './state';
 import { canPlayQuest } from './validation';
-import { resolveEvent, advanceTurn, type EventTarget } from './events';
+import { resolveEvent, advanceTurn, advanceTurnPastInactive, getActivePlayerIndices, type EventTarget } from './events';
 
 /** Party slot key for hero type (Knight -> knight, etc.) */
 const HERO_PARTY_KEY: Record<HeroType, keyof Party> = {
@@ -61,11 +61,12 @@ export function drawCard(state: GameState): GameState {
 }
 
 /**
- * Pass turn to the next player. Call after drawing (or anytime) to end turn.
+ * Pass turn to the next player. Skips inactive (disconnected/left) players; game over if none active.
  */
 export function passTurn(state: GameState): GameState {
   if (state.phase !== 'chooseAction' || state.winnerPlayerId) return state;
-  return advanceTurn(state);
+  const next = advanceTurn(state);
+  return advanceTurnPastInactive(next);
 }
 
 /**
@@ -229,23 +230,64 @@ export function summonFromEventPile(state: GameState, cardId: CardId): GameState
   };
 }
 
+const EMPTY_INACTIVE: number[] = [];
+
 /**
- * Mark that a player left the game (disconnect or abandon). Ends the game:
- * - If exactly one player remains, they win.
- * - Otherwise (0 or 2+ remaining), game over with no winner (abandoned).
+ * Mark that a player left or disconnected.
+ * - 2 players: end game, remaining player wins.
+ * - 3+ players: add to disconnected (can rejoin) or left (no rejoin); skip their turn; game continues.
  */
-export function playerLeft(state: GameState, leftPlayerIndex: number): GameState {
+export function playerLeft(
+  state: GameState,
+  leftPlayerIndex: number,
+  reason: 'leave' | 'disconnect'
+): GameState {
   if (state.phase === 'gameOver' || state.winnerPlayerId) return state;
-  const remainingIndices = state.players
-    .map((_, i) => i)
-    .filter((i) => i !== leftPlayerIndex);
-  const winnerPlayerId =
-    remainingIndices.length === 1
-      ? state.players[remainingIndices[0]].id
-      : null;
-  return {
+  const n = state.players.length;
+  if (n <= 2) {
+    const remainingIndices = state.players
+      .map((_, i) => i)
+      .filter((i) => i !== leftPlayerIndex);
+    const winnerPlayerId =
+      remainingIndices.length === 1
+        ? state.players[remainingIndices[0]].id
+        : null;
+    return { ...state, phase: 'gameOver' as const, winnerPlayerId };
+  }
+  const disconnected = [...(state.disconnectedPlayerIndices ?? EMPTY_INACTIVE)];
+  const left = [...(state.leftPlayerIndices ?? EMPTY_INACTIVE)];
+  if (reason === 'disconnect') {
+    if (!disconnected.includes(leftPlayerIndex)) disconnected.push(leftPlayerIndex);
+  } else {
+    if (!left.includes(leftPlayerIndex)) left.push(leftPlayerIndex);
+  }
+  let next: GameState = {
     ...state,
-    phase: 'gameOver',
-    winnerPlayerId,
+    disconnectedPlayerIndices: disconnected,
+    leftPlayerIndices: left,
   };
+  if (next.currentPlayerIndex === leftPlayerIndex) {
+    next = advanceTurn(next);
+    next = advanceTurnPastInactive(next);
+  }
+  const activeIndices = getActivePlayerIndices(next);
+  if (activeIndices.length === 1) {
+    return {
+      ...next,
+      phase: 'gameOver' as const,
+      winnerPlayerId: next.players[activeIndices[0]].id,
+    };
+  }
+  return next;
+}
+
+/**
+ * Mark that a disconnected player reconnected. Removes them from disconnected list.
+ */
+export function playerReconnected(state: GameState, playerIndex: number): GameState {
+  if (state.phase === 'gameOver' || state.winnerPlayerId) return state;
+  const disconnected = (state.disconnectedPlayerIndices ?? EMPTY_INACTIVE).filter(
+    (i) => i !== playerIndex
+  );
+  return { ...state, disconnectedPlayerIndices: disconnected };
 }

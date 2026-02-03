@@ -42,6 +42,10 @@ export interface GameState {
   firstPlayerIndex: number;
   phase: GamePhase;
   winnerPlayerId: string | null;
+  /** Player indices that disconnected (can rejoin). Their turn is skipped; they can still be targeted (e.g. stolen from). */
+  disconnectedPlayerIndices?: number[];
+  /** Player indices that left the game (explicit leave; no rejoin). Their turn is skipped. */
+  leftPlayerIndices?: number[];
   /** When phase is resolvingEvent, some events need a target (player index or card). */
   pendingEventTarget?: { playerIndex?: number; cardId?: CardId };
   /** Stargazer: after playing one card, allow a second play this turn. */

@@ -53,5 +53,7 @@ export function createGame(playerNames: string[]): GameState {
     firstPlayerIndex: 0,
     phase: 'chooseAction',
     winnerPlayerId: null,
+    disconnectedPlayerIndices: [],
+    leftPlayerIndices: [],
   };
 }

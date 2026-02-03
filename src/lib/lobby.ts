@@ -188,6 +188,108 @@ export async function leaveLobby(
   return {};
 }
 
+const LOBBY_STORAGE_KEY = 'hw_lobby';
+
+export interface RestoredLobby {
+  lobbyId: string;
+  lobbyCode: string;
+  playerId: string;
+  playerName: string;
+  isHost: boolean;
+  players: LobbyPlayer[];
+}
+
+/** Restore lobby state for reconnection: fetch lobby and players if this player is still in the lobby. */
+export async function getLobbyForReconnect(
+  lobbyId: string,
+  playerId: string
+): Promise<RestoredLobby | { error: string }> {
+  if (!supabase) return { error: 'Supabase not configured' };
+
+  const { data: lobby, error: lobbyError } = await supabase
+    .from('lobbies')
+    .select('id, code, status')
+    .eq('id', lobbyId)
+    .single();
+
+  if (lobbyError || !lobby) {
+    return { error: lobbyError?.message ?? 'Lobby not found' };
+  }
+
+  const { data: allPlayers, error: playersError } = await supabase
+    .from('lobby_players')
+    .select('id, name, is_host')
+    .eq('lobby_id', lobbyId)
+    .order('created_at', { ascending: true });
+
+  if (playersError || !allPlayers) {
+    return { error: playersError?.message ?? 'Failed to load players' };
+  }
+
+  const me = allPlayers.find((p) => p.id === playerId);
+  if (!me) {
+    return { error: 'You are no longer in this lobby' };
+  }
+
+  const players: LobbyPlayer[] = allPlayers.map(rowToPlayer);
+  return {
+    lobbyId: lobby.id,
+    lobbyCode: lobby.code,
+    playerId: me.id,
+    playerName: me.name,
+    isHost: me.is_host,
+    players,
+  };
+}
+
+/** Persist lobby for reconnection (sessionStorage). */
+export function persistLobbyForReconnect(lobby: {
+  lobbyId: string;
+  playerId: string;
+  playerName: string;
+}): void {
+  if (typeof window === 'undefined') return;
+  try {
+    sessionStorage.setItem(LOBBY_STORAGE_KEY, JSON.stringify(lobby));
+  } catch {
+    // ignore
+  }
+}
+
+/** Clear persisted lobby (e.g. on explicit leave). */
+export function clearPersistedLobby(): void {
+  if (typeof window === 'undefined') return;
+  try {
+    sessionStorage.removeItem(LOBBY_STORAGE_KEY);
+  } catch {
+    // ignore
+  }
+}
+
+/** Read persisted lobby from sessionStorage (for reconnection on load). */
+export function getPersistedLobby(): {
+  lobbyId: string;
+  playerId: string;
+  playerName: string;
+} | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = sessionStorage.getItem(LOBBY_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { lobbyId?: string; playerId?: string; playerName?: string };
+    if (parsed.lobbyId && parsed.playerId && parsed.playerName) {
+      return {
+        lobbyId: parsed.lobbyId,
+        playerId: parsed.playerId,
+        playerName: parsed.playerName,
+      };
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 /** Subscribe to lobby_players for a lobby; callback receives updated list. */
 export function subscribeToLobbyPlayers(
   lobbyId: string,

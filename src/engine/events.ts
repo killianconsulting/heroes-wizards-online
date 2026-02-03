@@ -38,13 +38,15 @@ function hasStargazer(party: Party): boolean {
 /**
  * Advance turn, unless current player has Stargazer and hasn't used their second play yet.
  * If so, set stargazerSecondPlayUsed and keep turn; otherwise advance to next player.
+ * Skips inactive (disconnected/left) players.
  */
 export function maybeAdvanceTurn(state: GameState): GameState {
   const current = state.players[state.currentPlayerIndex];
   if (hasStargazer(current.party) && !state.stargazerSecondPlayUsed) {
     return { ...state, stargazerSecondPlayUsed: true };
   }
-  return advanceTurn(state);
+  const next = advanceTurn(state);
+  return advanceTurnPastInactive(next);
 }
 
 /**
@@ -252,4 +254,39 @@ export function advanceTurn(state: GameState): GameState {
     actedThisTurn: undefined,
     eventBlocked: undefined,
   };
+}
+
+const EMPTY_INACTIVE: number[] = [];
+
+/** True if this player index is disconnected or left (inactive). */
+export function isPlayerInactive(state: GameState, index: number): boolean {
+  const disconnected = state.disconnectedPlayerIndices ?? EMPTY_INACTIVE;
+  const left = state.leftPlayerIndices ?? EMPTY_INACTIVE;
+  return disconnected.includes(index) || left.includes(index);
+}
+
+/** Indices of players who are still active (not disconnected or left). */
+export function getActivePlayerIndices(state: GameState): number[] {
+  return state.players
+    .map((_, i) => i)
+    .filter((i) => !isPlayerInactive(state, i));
+}
+
+/** Advance turn until current player is active, or game over if no active players remain. */
+export function advanceTurnPastInactive(state: GameState): GameState {
+  if (state.phase === 'gameOver' || state.winnerPlayerId) return state;
+  const n = state.players.length;
+  let s = state;
+  let steps = 0;
+  while (steps < n && isPlayerInactive(s, s.currentPlayerIndex)) {
+    s = advanceTurn(s);
+    steps++;
+  }
+  if (steps === n) {
+    const active = getActivePlayerIndices(s);
+    const winnerPlayerId =
+      active.length === 1 ? s.players[active[0]].id : null;
+    return { ...s, phase: 'gameOver' as const, winnerPlayerId };
+  }
+  return s;
 }

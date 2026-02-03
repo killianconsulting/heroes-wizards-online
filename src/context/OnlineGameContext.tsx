@@ -11,9 +11,9 @@ import {
   ReactNode,
 } from 'react';
 import { useLobby } from '@/context/LobbyContext';
-import { subscribeToGameChannel, broadcastGameStart, broadcastGameState, broadcastPlayerLeft, sendAction as sendActionToChannel, applyAction } from '@/lib/gameSync';
+import { subscribeToGameChannel, broadcastGameStart, broadcastGameState, broadcastPlayerLeft, broadcastRequestState, sendAction as sendActionToChannel, applyAction } from '@/lib/gameSync';
 import type { GameState } from '@/engine/state';
-import { playerLeft } from '@/engine/actions';
+import { playerLeft, playerReconnected } from '@/engine/actions';
 import type { GameAction } from '@/lib/gameSync';
 import { isSupabaseConfigured } from '@/lib/supabase';
 
@@ -36,6 +36,8 @@ export interface OnlineGameContextValue {
   applyActionAndBroadcast: (action: GameAction) => void;
   /** Non-host: send an action to the channel for the host to apply. */
   sendAction: (action: GameAction) => Promise<void>;
+  /** Request current game state from host (reconnecting client). Host will broadcast game_state. */
+  requestGameState: () => Promise<void>;
 }
 
 const OnlineGameContext = createContext<OnlineGameContextValue | null>(null);
@@ -53,6 +55,7 @@ export function useOnlineGame(): OnlineGameContextValue {
       notifyPlayerLeftAndLeave: async () => {},
       applyActionAndBroadcast: () => {},
       sendAction: async () => {},
+      requestGameState: async () => {},
     };
   }
   return ctx;
@@ -95,19 +98,25 @@ export function OnlineGameProvider({ children }: { children: ReactNode }) {
 
   const notifyPlayerLeftAndLeave = useCallback(async () => {
     if (lobbyId && myPlayerIndex >= 0 && playerId) {
-      await broadcastPlayerLeft(lobbyId, myPlayerIndex, playerId, gameChannelRef.current);
+      await broadcastPlayerLeft(lobbyId, myPlayerIndex, playerId, gameChannelRef.current, 'leave');
     }
     leaveOnlineGame();
   }, [lobbyId, myPlayerIndex, playerId, leaveOnlineGame]);
+
+  const requestGameState = useCallback(async () => {
+    if (lobbyId && playerId) {
+      await broadcastRequestState(lobbyId, playerId, gameChannelRef.current);
+    }
+  }, [lobbyId, playerId]);
 
   const applyActionAndBroadcast = useCallback(
     async (action: GameAction) => {
       if (!gameState || !lobbyId || !isHost) return;
       const next = applyAction(gameState, action);
       setGameState(next);
-      await broadcastGameState(lobbyId, next, gameChannelRef.current);
+      await broadcastGameState(lobbyId, next, gameChannelRef.current, playerOrder);
     },
-    [gameState, lobbyId, isHost]
+    [gameState, lobbyId, isHost, playerOrder]
   );
 
   const sendAction = useCallback(
@@ -120,6 +129,8 @@ export function OnlineGameProvider({ children }: { children: ReactNode }) {
 
   const gameStateRef = useRef<GameState | null>(gameState);
   gameStateRef.current = gameState;
+  const playerOrderRef = useRef<string[]>(playerOrder);
+  playerOrderRef.current = playerOrder;
 
   // Subscribe to game channel when in a lobby (both host and clients)
   useEffect(() => {
@@ -136,6 +147,7 @@ export function OnlineGameProvider({ children }: { children: ReactNode }) {
       },
       onGameState: (payload) => {
         setGameState(payload.state);
+        if (payload.playerOrder) setPlayerOrder(payload.playerOrder);
       },
       onAction: isHost
         ? (payload) => {
@@ -143,16 +155,33 @@ export function OnlineGameProvider({ children }: { children: ReactNode }) {
             if (!current || payload.fromPlayerIndex !== current.currentPlayerIndex) return;
             const next = applyAction(current, payload.action);
             setGameState(next);
-            broadcastGameState(lobbyId, next, gameChannelRef.current);
+            broadcastGameState(lobbyId, next, gameChannelRef.current, playerOrderRef.current);
           }
         : undefined,
       onPlayerLeft: isHost
         ? (payload) => {
             const current = gameStateRef.current;
             if (!current || current.phase === 'gameOver') return;
-            const next = playerLeft(current, payload.playerIndex);
+            const next = playerLeft(current, payload.playerIndex, payload.reason ?? 'leave');
             setGameState(next);
-            broadcastGameState(lobbyId, next, gameChannelRef.current);
+            broadcastGameState(lobbyId, next, gameChannelRef.current, playerOrderRef.current);
+          }
+        : undefined,
+      onPlayerReconnected: isHost
+        ? (payload) => {
+            const current = gameStateRef.current;
+            if (!current || current.phase === 'gameOver') return;
+            const disconnected = current.disconnectedPlayerIndices ?? [];
+            if (!disconnected.includes(payload.playerIndex)) return;
+            const next = playerReconnected(current, payload.playerIndex);
+            setGameState(next);
+            broadcastGameState(lobbyId, next, gameChannelRef.current, playerOrderRef.current);
+          }
+        : undefined,
+      onRequestState: isHost
+        ? () => {
+            const current = gameStateRef.current;
+            if (current) broadcastGameState(lobbyId, current, gameChannelRef.current, playerOrderRef.current);
           }
         : undefined,
       channelRef: gameChannelRef,
@@ -160,6 +189,18 @@ export function OnlineGameProvider({ children }: { children: ReactNode }) {
 
     return unsubscribe;
   }, [lobbyId, playerId, isHost]);
+
+  // Reconnecting client: request current game state from host (once) when we have lobby but no state
+  const hasRequestedStateRef = useRef(false);
+  useEffect(() => {
+    if (!lobbyId || !playerId || gameState != null) return;
+    if (hasRequestedStateRef.current) return;
+    hasRequestedStateRef.current = true;
+    const t = setTimeout(() => {
+      requestGameState();
+    }, 800);
+    return () => clearTimeout(t);
+  }, [lobbyId, playerId, gameState, requestGameState]);
 
   const value = useMemo<OnlineGameContextValue>(
     () => ({
@@ -172,6 +213,7 @@ export function OnlineGameProvider({ children }: { children: ReactNode }) {
       notifyPlayerLeftAndLeave,
       applyActionAndBroadcast,
       sendAction,
+      requestGameState,
     }),
     [
       gameState,
@@ -183,6 +225,7 @@ export function OnlineGameProvider({ children }: { children: ReactNode }) {
       notifyPlayerLeftAndLeave,
       applyActionAndBroadcast,
       sendAction,
+      requestGameState,
     ]
   );
 

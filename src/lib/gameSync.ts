@@ -27,6 +27,8 @@ export interface GameStartPayload {
 
 export interface GameStatePayload {
   state: GameState;
+  /** Included so reconnecting clients get player order; host sends with every game_state. */
+  playerOrder?: string[];
 }
 
 export interface ActionPayload {
@@ -36,6 +38,16 @@ export interface ActionPayload {
 
 export interface PlayerLeftPayload {
   playerIndex: number;
+  playerId: string;
+  /** 'leave' = explicit abandon (no rejoin); 'disconnect' = dropped (can rejoin). */
+  reason?: 'leave' | 'disconnect';
+}
+
+export interface PlayerReconnectedPayload {
+  playerIndex: number;
+}
+
+export interface RequestStatePayload {
   playerId: string;
 }
 
@@ -53,7 +65,7 @@ type GameChannelRef = {
   } | null;
 };
 
-/** Subscribe to game channel; callbacks for game_start, game_state, player_left; host can pass onAction/onPlayerLeft to apply and broadcast. */
+/** Subscribe to game channel; callbacks for game_start, game_state, player_left, player_reconnected, request_state. */
 export function subscribeToGameChannel(
   lobbyId: string,
   callbacks: {
@@ -62,6 +74,10 @@ export function subscribeToGameChannel(
     onAction?: (payload: ActionPayload) => void;
     /** Host: when a player leaves (abandon or disconnect), apply and broadcast. */
     onPlayerLeft?: (payload: PlayerLeftPayload) => void;
+    /** Host: when a disconnected player rejoins presence, apply playerReconnected and broadcast. */
+    onPlayerReconnected?: (payload: PlayerReconnectedPayload) => void;
+    /** Host: when a client requests current state (e.g. reconnecting), broadcast game_state. */
+    onRequestState?: (payload: RequestStatePayload) => void;
     /** When provided, store the subscription channel here so host/client can send on it and track presence. */
     channelRef?: GameChannelRef;
   }
@@ -87,7 +103,11 @@ export function subscribeToGameChannel(
       callbacks.onAction?.(payload as ActionPayload);
     })
     .on('broadcast', { event: 'player_left' }, ({ payload }) => {
-      callbacks.onPlayerLeft?.(payload as PlayerLeftPayload);
+      const p = payload as PlayerLeftPayload;
+      callbacks.onPlayerLeft?.({ ...p, reason: p.reason ?? 'leave' });
+    })
+    .on('broadcast', { event: 'request_state' }, ({ payload }) => {
+      callbacks.onRequestState?.(payload as RequestStatePayload);
     })
     .on('presence', { event: 'leave' }, ({ leftPresences }) => {
       if (!callbacks.onPlayerLeft) return;
@@ -95,7 +115,16 @@ export function subscribeToGameChannel(
         const playerIndex = presence.playerIndex as number | undefined;
         const playerId = presence.playerId as string | undefined;
         if (typeof playerIndex === 'number' && typeof playerId === 'string') {
-          callbacks.onPlayerLeft!({ playerIndex, playerId });
+          callbacks.onPlayerLeft!({ playerIndex, playerId, reason: 'disconnect' });
+        }
+      });
+    })
+    .on('presence', { event: 'join' }, ({ newPresences }) => {
+      if (!callbacks.onPlayerReconnected) return;
+      newPresences.forEach((presence: Record<string, unknown>) => {
+        const playerIndex = presence.playerIndex as number | undefined;
+        if (typeof playerIndex === 'number') {
+          callbacks.onPlayerReconnected!({ playerIndex });
         }
       });
     })
@@ -133,18 +162,20 @@ export async function broadcastGameStart(
   client.removeChannel(channel);
 }
 
-/** Broadcast new game state. Pass existingChannel to send on subscription channel and avoid removing it. */
+/** Broadcast new game state. Pass existingChannel to send on subscription channel. Include playerOrder so reconnecting clients get it. */
 export async function broadcastGameState(
   lobbyId: string,
   state: GameState,
-  existingChannel?: { send: (args: object) => Promise<unknown> } | null
+  existingChannel?: { send: (args: object) => Promise<unknown> } | null,
+  playerOrder?: string[]
 ): Promise<void> {
   if (!supabase && !existingChannel) return;
+  const payload = playerOrder != null ? { state, playerOrder } : { state };
   if (existingChannel) {
     await existingChannel.send({
       type: 'broadcast',
       event: 'game_state',
-      payload: { state },
+      payload,
     });
     return;
   }
@@ -153,7 +184,7 @@ export async function broadcastGameState(
   await channel.send({
     type: 'broadcast',
     event: 'game_state',
-    payload: { state },
+    payload,
   });
   client.removeChannel(channel);
 }
@@ -182,13 +213,36 @@ export async function broadcastPlayerLeft(
   lobbyId: string,
   playerIndex: number,
   playerId: string,
-  existingChannel?: { send: (args: object) => Promise<unknown> } | null
+  existingChannel?: { send: (args: object) => Promise<unknown> } | null,
+  reason: 'leave' | 'disconnect' = 'leave'
 ): Promise<void> {
   if (!supabase && !existingChannel) return;
   const payload = {
     type: 'broadcast' as const,
     event: 'player_left' as const,
-    payload: { playerIndex, playerId },
+    payload: { playerIndex, playerId, reason },
+  };
+  if (existingChannel) {
+    await existingChannel.send(payload);
+    return;
+  }
+  const client = supabase!;
+  const channel = client.channel(getChannelName(lobbyId), { config: { broadcast: { self: true } } });
+  await channel.send(payload);
+  client.removeChannel(channel);
+}
+
+/** Request current game state (reconnecting client). Host responds by broadcasting game_state. */
+export async function broadcastRequestState(
+  lobbyId: string,
+  playerId: string,
+  existingChannel?: { send: (args: object) => Promise<unknown> } | null
+): Promise<void> {
+  if (!supabase && !existingChannel) return;
+  const payload = {
+    type: 'broadcast' as const,
+    event: 'request_state' as const,
+    payload: { playerId },
   };
   if (existingChannel) {
     await existingChannel.send(payload);

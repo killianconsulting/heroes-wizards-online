@@ -6,10 +6,18 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   ReactNode,
 } from 'react';
-import { subscribeToLobbyPlayers } from '@/lib/lobby';
+import { useRouter } from 'next/navigation';
+import {
+  subscribeToLobbyPlayers,
+  getPersistedLobby,
+  getLobbyForReconnect,
+  persistLobbyForReconnect,
+  clearPersistedLobby,
+} from '@/lib/lobby';
 import { isSupabaseConfigured } from '@/lib/supabase';
 
 export interface LobbyPlayer {
@@ -64,7 +72,9 @@ export function useLobby() {
 }
 
 export function LobbyProvider({ children }: { children: ReactNode }) {
+  const router = useRouter();
   const [lobby, setLobbyState] = useState<LobbyState | null>(null);
+  const hasRestoredRef = useRef(false);
 
   const setLobby = useCallback((arg: SetLobbyArg) => {
     setLobbyState((prev) =>
@@ -74,9 +84,46 @@ export function LobbyProvider({ children }: { children: ReactNode }) {
 
   const leaveLobby = useCallback(() => {
     setLobbyState(null);
+    clearPersistedLobby();
   }, []);
 
   const generateLobbyCode = useCallback(() => generateCode(4), []);
+
+  // Restore lobby from sessionStorage on load (reconnection)
+  useEffect(() => {
+    if (!isSupabaseConfigured() || hasRestoredRef.current) return;
+    hasRestoredRef.current = true;
+    const persisted = getPersistedLobby();
+    if (!persisted) return;
+    getLobbyForReconnect(persisted.lobbyId, persisted.playerId).then((result) => {
+      if ('error' in result) {
+        clearPersistedLobby();
+        return;
+      }
+      setLobbyState({
+        lobbyCode: result.lobbyCode,
+        playerName: result.playerName,
+        isHost: result.isHost,
+        players: result.players,
+        lobbyId: result.lobbyId,
+        playerId: result.playerId,
+      });
+      router.replace(`/?mode=online&lobby=${encodeURIComponent(result.lobbyCode)}`);
+    });
+  }, [router]);
+
+  // Persist lobby for reconnection when we have lobbyId and playerId
+  useEffect(() => {
+    if (lobby?.lobbyId && lobby?.playerId && lobby?.playerName) {
+      persistLobbyForReconnect({
+        lobbyId: lobby.lobbyId,
+        playerId: lobby.playerId,
+        playerName: lobby.playerName,
+      });
+    } else if (!lobby) {
+      clearPersistedLobby();
+    }
+  }, [lobby?.lobbyId, lobby?.playerId, lobby?.playerName, lobby]);
 
   // Subscribe to Supabase Realtime when we have a lobby with lobbyId
   useEffect(() => {
