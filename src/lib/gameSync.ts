@@ -50,7 +50,10 @@ export function subscribeToGameChannel(
   }
 ): () => void {
   if (!supabase) return () => {};
-  const channel = supabase.channel(getChannelName(lobbyId), { config: { broadcast: { self: true } } });
+  
+  // Store in const so TypeScript knows it's not null in closures
+  const client = supabase;
+  const channel = client.channel(getChannelName(lobbyId), { config: { broadcast: { self: true } } });
 
   channel
     .on('broadcast', { event: 'game_start' }, ({ payload }) => {
@@ -65,7 +68,7 @@ export function subscribeToGameChannel(
     .subscribe();
 
   return () => {
-    supabase.removeChannel(channel);
+    client.removeChannel(channel);
   };
 }
 
@@ -76,25 +79,31 @@ export async function broadcastGameStart(
   playerOrder: string[]
 ): Promise<void> {
   if (!supabase) return;
-  const channel = supabase.channel(getChannelName(lobbyId), { config: { broadcast: { self: true } } });
+  
+  // Store in const so TypeScript knows it's not null
+  const client = supabase;
+  const channel = client.channel(getChannelName(lobbyId), { config: { broadcast: { self: true } } });
   await channel.send({
     type: 'broadcast',
     event: 'game_start',
     payload: { state, playerOrder },
   });
-  supabase.removeChannel(channel);
+  client.removeChannel(channel);
 }
 
 /** Broadcast new game state. Host calls after applying an action. */
 export async function broadcastGameState(lobbyId: string, state: GameState): Promise<void> {
   if (!supabase) return;
-  const channel = supabase.channel(getChannelName(lobbyId), { config: { broadcast: { self: true } } });
+  
+  // Store in const so TypeScript knows it's not null
+  const client = supabase;
+  const channel = client.channel(getChannelName(lobbyId), { config: { broadcast: { self: true } } });
   await channel.send({
     type: 'broadcast',
     event: 'game_state',
     payload: { state },
   });
-  supabase.removeChannel(channel);
+  client.removeChannel(channel);
 }
 
 /** Send an action (non-host calls). Host receives via onAction, applies, then broadcasts game_state. */
@@ -104,13 +113,16 @@ export async function sendAction(
   action: GameAction
 ): Promise<void> {
   if (!supabase) return;
-  const channel = supabase.channel(getChannelName(lobbyId), { config: { broadcast: { self: true } } });
+  
+  // Store in const so TypeScript knows it's not null
+  const client = supabase;
+  const channel = client.channel(getChannelName(lobbyId), { config: { broadcast: { self: true } } });
   await channel.send({
     type: 'broadcast',
     event: 'action',
     payload: { action, fromPlayerIndex },
   });
-  supabase.removeChannel(channel);
+  client.removeChannel(channel);
 }
 
 /** Apply an action to state (host uses this when receiving action from channel). */
