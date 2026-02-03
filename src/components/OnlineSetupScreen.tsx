@@ -1,19 +1,27 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import GameLogo from './GameLogo';
+import { useLeaveGame } from '@/context/LeaveGameContext';
 import { useLobby } from '@/context/LobbyContext';
+import { useOnlineGame } from '@/context/OnlineGameContext';
 import { createLobby, joinLobby } from '@/lib/lobby';
 import { isSupabaseConfigured } from '@/lib/supabase';
 
 const NAME_MAX_LENGTH = 20;
 const LOBBY_CODE_LENGTH = 4;
 
-export default function OnlineSetupScreen() {
+interface OnlineSetupScreenProps {
+  /** When provided (from StartScreen), clears view and navigates home so logo/Change Mode work. */
+  onGoToStart?: () => void;
+}
+
+export default function OnlineSetupScreen({ onGoToStart }: OnlineSetupScreenProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { setLobby, generateLobbyCode } = useLobby();
+  const { setLobby, generateLobbyCode, leaveLobby } = useLobby();
+  const { leaveOnlineGame } = useOnlineGame();
   const lobbyFromUrl = searchParams.get('lobby')?.trim().toUpperCase().slice(0, LOBBY_CODE_LENGTH) ?? '';
   const [joinLobbyCode, setJoinLobbyCode] = useState('');
   const [joinName, setJoinName] = useState('');
@@ -21,6 +29,19 @@ export default function OnlineSetupScreen() {
   const [joinError, setJoinError] = useState('');
   const [createError, setCreateError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const goToStartLocal = useCallback(() => {
+    leaveLobby();
+    leaveOnlineGame();
+    router.replace('/');
+  }, [leaveLobby, leaveOnlineGame, router]);
+
+  const goToStart = onGoToStart ?? goToStartLocal;
+
+  const { registerGoToStart } = useLeaveGame();
+  useEffect(() => {
+    registerGoToStart(goToStart);
+  }, [registerGoToStart, goToStart]);
 
   // Pre-fill lobby code when user opens invite link (?mode=online&lobby=XXXX)
   useEffect(() => {
@@ -35,34 +56,39 @@ export default function OnlineSetupScreen() {
     setLoading(true);
     const name = createName.trim() || 'Player';
 
-    if (isSupabaseConfigured()) {
-      const result = await createLobby(name);
-      setLoading(false);
-      if ('error' in result) {
-        setCreateError(result.error);
+    try {
+      if (isSupabaseConfigured()) {
+        const result = await createLobby(name);
+        if ('error' in result) {
+          setCreateError(result.error);
+          return;
+        }
+        setLobby({
+          lobbyCode: result.lobbyCode,
+          playerName: result.playerName,
+          isHost: true,
+          players: result.players,
+          lobbyId: result.lobbyId,
+          playerId: result.playerId,
+        });
+        router.replace(`/?mode=online&lobby=${result.lobbyCode}`);
         return;
       }
-      setLobby({
-        lobbyCode: result.lobbyCode,
-        playerName: result.playerName,
-        isHost: true,
-        players: result.players,
-        lobbyId: result.lobbyId,
-        playerId: result.playerId,
-      });
-      router.replace(`/?mode=online&lobby=${result.lobbyCode}`);
-      return;
-    }
 
-    const code = generateLobbyCode();
-    setLobby({
-      lobbyCode: code,
-      playerName: name,
-      isHost: true,
-      players: [{ id: 'host', name, isHost: true }],
-    });
-    setLoading(false);
-    router.replace(`/?mode=online&lobby=${code}`);
+      const code = generateLobbyCode();
+      setLobby({
+        lobbyCode: code,
+        playerName: name,
+        isHost: true,
+        players: [{ id: 'host', name, isHost: true }],
+      });
+      router.replace(`/?mode=online&lobby=${code}`);
+    } catch (err) {
+      console.error('Create lobby error:', err);
+      setCreateError(err instanceof Error ? err.message : 'Something went wrong');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleJoinLobby = async (e: React.FormEvent) => {
@@ -110,13 +136,13 @@ export default function OnlineSetupScreen() {
   return (
     <main className="start-screen online-setup">
       <h1 className="start-title">
-        <GameLogo maxHeight={173} onClick={() => router.replace('/')} />
+        <GameLogo maxHeight={173} onClick={goToStart} />
       </h1>
       <p className="start-subtitle">The Card Game of Strategy, Magic & Mischief!</p>
 
       <button
         type="button"
-        onClick={() => router.replace('/')}
+        onClick={goToStart}
         className="start-change-mode"
         aria-label="Change play mode (Local or Online)"
       >

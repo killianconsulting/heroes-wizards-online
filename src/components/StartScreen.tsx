@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import GameLogo from './GameLogo';
 import { MIN_PLAYERS, MAX_PLAYERS } from '@/data/constants';
@@ -8,7 +8,9 @@ import { getRandomThemedName } from '@/utils/themedNames';
 import PlayerAvatarIcon from './PlayerAvatarIcon';
 import OnlineSetupScreen from './OnlineSetupScreen';
 import LobbyScreen from './LobbyScreen';
+import { useLeaveGame } from '@/context/LeaveGameContext';
 import { useLobby } from '@/context/LobbyContext';
+import { useOnlineGame } from '@/context/OnlineGameContext';
 
 export type TurnWaitSeconds = 0 | 3 | 5;
 
@@ -21,9 +23,18 @@ type StartView = 'choice' | 'local' | 'online';
 export default function StartScreen({ onStart }: StartScreenProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { lobby } = useLobby();
+  const { registerGoToStart } = useLeaveGame();
+  const { lobby, leaveLobby } = useLobby();
+  const { leaveOnlineGame } = useOnlineGame();
   const modeFromUrl = searchParams.get('mode');
   const lobbyCodeFromUrl = searchParams.get('lobby');
+
+  const goToStart = useCallback(() => {
+    setViewOverride('choice');
+    leaveLobby();
+    leaveOnlineGame();
+    router.replace('/');
+  }, [leaveLobby, leaveOnlineGame, router]);
 
   // Local state so buttons update the view immediately (router.replace can be slow)
   const [viewOverride, setViewOverride] = useState<StartView | null>(null);
@@ -40,6 +51,12 @@ export default function StartScreen({ onStart }: StartScreenProps) {
     lobbyCodeFromUrl &&
     lobby &&
     lobby.lobbyCode === lobbyCodeFromUrl;
+
+  // Register go-to-start so footer works; when on lobby, LobbyScreen registers its own
+  useEffect(() => {
+    if (view !== 'online') registerGoToStart(goToStart);
+  }, [view, registerGoToStart, goToStart]);
+
   const [playerCount, setPlayerCount] = useState(MIN_PLAYERS);
   const [names, setNames] = useState<string[]>(
     Array.from({ length: MIN_PLAYERS }, (_, i) => `Player ${i + 1}`)
@@ -65,7 +82,7 @@ export default function StartScreen({ onStart }: StartScreenProps) {
     return (
       <main className="start-screen">
         <h1 className="start-title">
-          <GameLogo maxHeight={173} onClick={() => router.replace('/')} />
+          <GameLogo maxHeight={173} onClick={goToStart} />
         </h1>
         <p className="start-subtitle">The Card Game of Strategy, Magic & Mischief!</p>
         <div className="start-choice">
@@ -100,18 +117,18 @@ export default function StartScreen({ onStart }: StartScreenProps) {
     if (showLobbyScreen) {
       return <LobbyScreen onStartGame={onStart} />;
     }
-    return <OnlineSetupScreen />;
+    return <OnlineSetupScreen onGoToStart={goToStart} />;
   }
 
   return (
     <main className="start-screen">
       <h1 className="start-title">
-        <GameLogo maxHeight={173} onClick={() => router.replace('/')} />
+        <GameLogo maxHeight={173} onClick={goToStart} />
       </h1>
       <p className="start-subtitle">The Card Game of Strategy, Magic & Mischief!</p>
       <button
         type="button"
-        onClick={() => router.replace('/')}
+        onClick={goToStart}
         className="start-change-mode"
         aria-label="Change play mode (Local or Online)"
       >

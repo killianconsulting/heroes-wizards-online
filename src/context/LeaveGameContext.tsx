@@ -6,6 +6,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 
@@ -14,6 +15,10 @@ interface LeaveGameContextValue {
   onLeaveGame: () => void;
   registerLeaveGame: (inGame: boolean, onLeaveGame: () => void) => void;
   requestLeaveGame: () => void;
+  /** Register a callback to run when user wants to go to start screen (e.g. footer link). */
+  registerGoToStart: (callback: () => void) => void;
+  /** Call the registered go-to-start callback (clears lobby/view and navigates home). */
+  goToStartScreen: () => void;
 }
 
 const LeaveGameContext = createContext<LeaveGameContextValue | null>(null);
@@ -26,6 +31,8 @@ export function useLeaveGame() {
       onLeaveGame: () => {},
       registerLeaveGame: () => {},
       requestLeaveGame: () => {},
+      registerGoToStart: () => {},
+      goToStartScreen: () => {},
     };
   }
   return ctx;
@@ -33,12 +40,21 @@ export function useLeaveGame() {
 
 export function LeaveGameProvider({ children }: { children: React.ReactNode }) {
   const [inGame, setInGame] = useState(false);
-  const [onLeaveGame, setOnLeaveGame] = useState<() => void>(() => () => {});
   const [showModal, setShowModal] = useState(false);
+  const onLeaveGameRef = useRef<() => void>(() => {});
+  const goToStartCallbackRef = useRef<() => void>(() => {});
 
   const registerLeaveGame = useCallback((inGameVal: boolean, onLeave: () => void) => {
+    onLeaveGameRef.current = onLeave;
     setInGame(inGameVal);
-    setOnLeaveGame(() => onLeave);
+  }, []);
+
+  const registerGoToStart = useCallback((callback: () => void) => {
+    goToStartCallbackRef.current = callback;
+  }, []);
+
+  const goToStartScreen = useCallback(() => {
+    goToStartCallbackRef.current();
   }, []);
 
   const requestLeaveGame = useCallback(() => {
@@ -47,8 +63,8 @@ export function LeaveGameProvider({ children }: { children: React.ReactNode }) {
 
   const handleConfirm = useCallback(() => {
     setShowModal(false);
-    onLeaveGame();
-  }, [onLeaveGame]);
+    onLeaveGameRef.current();
+  }, []);
 
   useEffect(() => {
     if (!showModal) return;
@@ -60,8 +76,15 @@ export function LeaveGameProvider({ children }: { children: React.ReactNode }) {
   }, [showModal]);
 
   const value = useMemo(
-    () => ({ inGame, onLeaveGame, registerLeaveGame, requestLeaveGame }),
-    [inGame, onLeaveGame, registerLeaveGame, requestLeaveGame]
+    () => ({
+      inGame,
+      onLeaveGame: () => onLeaveGameRef.current(),
+      registerLeaveGame,
+      requestLeaveGame,
+      registerGoToStart,
+      goToStartScreen,
+    }),
+    [inGame, registerLeaveGame, requestLeaveGame, registerGoToStart, goToStartScreen]
   );
 
   return (

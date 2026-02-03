@@ -1,21 +1,25 @@
 'use client';
 
+import { useCallback, useState } from 'react';
 import Link from 'next/link';
-import { useState } from 'react';
 import { useLeaveGame } from '@/context/LeaveGameContext';
 
 export default function Footer() {
   const [dividerLoaded, setDividerLoaded] = useState(false);
   const [dividerError, setDividerError] = useState(false);
-  const { inGame, requestLeaveGame } = useLeaveGame();
+  const { inGame, requestLeaveGame, goToStartScreen } = useLeaveGame();
 
-  const handleStartScreenClick = (e: React.MouseEvent) => {
-    if (inGame) {
+  const handleStartScreenClick = useCallback(
+    (e: React.MouseEvent) => {
       e.preventDefault();
-      requestLeaveGame();
-    }
-    // If not in game, Link will navigate to /
-  };
+      if (inGame) {
+        requestLeaveGame();
+      } else {
+        goToStartScreen();
+      }
+    },
+    [inGame, requestLeaveGame, goToStartScreen]
+  );
 
   return (
     <footer className="site-footer">
@@ -31,13 +35,13 @@ export default function Footer() {
       )}
       <div className="site-footer__inner">
         <nav className="site-footer__nav" aria-label="Footer navigation">
-          <Link
+          <a
             href="/"
             className="site-footer__link"
             onClick={handleStartScreenClick}
           >
             Start Screen
-          </Link>
+          </a>
           <Link href="/how-to-play" className="site-footer__link">
             How to Play
           </Link>

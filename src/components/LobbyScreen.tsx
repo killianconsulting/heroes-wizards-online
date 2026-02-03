@@ -1,8 +1,9 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import GameLogo from './GameLogo';
+import { useLeaveGame } from '@/context/LeaveGameContext';
 import { useLobby } from '@/context/LobbyContext';
 import { useOnlineGame } from '@/context/OnlineGameContext';
 import PlayerAvatarIcon from './PlayerAvatarIcon';
@@ -18,7 +19,7 @@ interface LobbyScreenProps {
 export default function LobbyScreen({ onStartGame }: LobbyScreenProps) {
   const router = useRouter();
   const { lobby, leaveLobby } = useLobby();
-  const { startOnlineGameAsHost } = useOnlineGame();
+  const { startOnlineGameAsHost, leaveOnlineGame } = useOnlineGame();
   const [copied, setCopied] = useState(false);
   const [showStartWarning, setShowStartWarning] = useState(false);
 
@@ -29,6 +30,21 @@ export default function LobbyScreen({ onStartGame }: LobbyScreenProps) {
     leaveLobby();
     router.replace('/?mode=online');
   }, [lobby?.lobbyId, lobby?.playerId, leaveLobby, router]);
+
+  /** Go back to main start screen (clear lobby + online game, then navigate). */
+  const goToStart = useCallback(async () => {
+    if (lobby?.lobbyId && lobby?.playerId) {
+      await leaveLobbySupabase(lobby.lobbyId, lobby.playerId);
+    }
+    leaveLobby();
+    leaveOnlineGame();
+    router.replace('/');
+  }, [lobby?.lobbyId, lobby?.playerId, leaveLobby, leaveOnlineGame, router]);
+
+  const { registerGoToStart } = useLeaveGame();
+  useEffect(() => {
+    registerGoToStart(goToStart);
+  }, [registerGoToStart, goToStart]);
 
   const inviteUrl =
     typeof window !== 'undefined'
@@ -79,12 +95,12 @@ export default function LobbyScreen({ onStartGame }: LobbyScreenProps) {
   return (
     <main className="start-screen lobby-screen">
       <h1 className="start-title">
-        <GameLogo maxHeight={120} onClick={() => router.replace('/')} />
+        <GameLogo maxHeight={120} onClick={goToStart} />
       </h1>
 
       <button
         type="button"
-        onClick={() => router.replace('/')}
+        onClick={goToStart}
         className="start-change-mode"
         aria-label="Change play mode"
       >

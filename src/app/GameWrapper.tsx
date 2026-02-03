@@ -23,7 +23,7 @@ export default function GameWrapper() {
     } else {
       local.reset();
     }
-  }, [online, local]);
+  }, [online.gameState, online.leaveOnlineGame, local.reset]);
 
   useEffect(() => {
     registerLeaveGame(inGame, handleLeaveGame);
