@@ -123,3 +123,25 @@ If `alter publication supabase_realtime add table` fails (e.g. table already in 
 |----------------|--------|
 | `lobbies`      | One row per lobby: `id`, `code` (4-letter), `host_name`, `status` (`waiting` / `playing`). |
 | `lobby_players`| One row per player in a lobby: `id`, `lobby_id`, `name`, `is_host`. Realtime is enabled so all clients see join/leave. |
+
+---
+
+## Lobby retention (short)
+
+Lobby and lobby_players rows are kept only for a short time (2 hours). After that they are deleted by a cleanup job so abandoned lobbies don’t pile up.
+
+**To enable cleanup:**
+
+1. **Service role key** (Dashboard → Project Settings → API → `service_role` secret):  
+   Add to env as `SUPABASE_SERVICE_ROLE_KEY`. Do not expose this in the client; it’s only for the server cron.
+
+2. **Cron secret**:  
+   Set `CRON_SECRET` to a long random string (e.g. `openssl rand -hex 24`). Used to protect the cleanup endpoint.
+
+3. **Call the cleanup endpoint** on a schedule (e.g. every hour):
+   - **GET** `https://your-app.vercel.app/api/cron/cleanup-lobbies`
+   - Auth: either `Authorization: Bearer <CRON_SECRET>` or query `?secret=<CRON_SECRET>`
+   - **Vercel:** If you use the `vercel.json` cron (hourly), add `CRON_SECRET` and `SUPABASE_SERVICE_ROLE_KEY` to the project’s **Environment Variables**. Vercel will send `CRON_SECRET` as the Bearer token for cron requests.
+   - Or use [cron-job.org](https://cron-job.org) / similar: create a job that GETs the URL with `?secret=your-secret` every hour.
+
+If `SUPABASE_SERVICE_ROLE_KEY` or `CRON_SECRET` is not set, the app still works; only the automatic cleanup is skipped. Old lobbies will stay until the last player leaves (or you run cleanup manually).
