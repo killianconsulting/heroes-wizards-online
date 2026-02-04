@@ -170,7 +170,7 @@ export function OnlineGameProvider({ children }: { children: ReactNode }) {
     gameState &&
     ((gameState.leftPlayerIndices ?? []).includes(0) || (gameState.disconnectedPlayerIndices ?? []).includes(0));
   const newHostIndex = hostHasLeft && gameState ? getActivePlayerIndices(gameState)[0] ?? -1 : -1;
-  const isGameHost = isLobbyHost || (hostHasLeft && myPlayerIndex >= 0 && myPlayerIndex === newHostIndex);
+  const isGameHost = Boolean(isLobbyHost || (hostHasLeft && myPlayerIndex >= 0 && myPlayerIndex === newHostIndex));
   isGameHostRef.current = isGameHost;
 
   // Subscribe to game channel when in a lobby (both host and clients)
