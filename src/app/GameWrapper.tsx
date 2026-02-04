@@ -11,6 +11,7 @@ import { leaveLobby as leaveLobbySupabase } from '@/lib/lobby';
 import StartScreen from '@/components/StartScreen';
 import GameScreen from '@/components/GameScreen';
 import WinScreen from '@/components/WinScreen';
+import OnlineStatusNotification from '@/components/OnlineStatusNotification';
 
 export default function GameWrapper() {
   const router = useRouter();
@@ -95,20 +96,23 @@ export default function GameWrapper() {
     };
 
     return (
-      <GameScreen
-        state={state}
-        legalActions={legalActions}
-        passTurnCountdown={null}
-        onDraw={onDraw}
-        onPassTurn={onPassTurn}
-        onPlayCard={onPlayCard}
-        onDumpCard={onDumpCard}
-        onSummonFromPile={onSummonFromPile}
-        onDismissFortuneReading={onDismissFortuneReading}
-        onDismissEventBlocked={onDismissEventBlocked}
-        onLeaveGame={handleLeaveGame}
-        myPlayerIndex={online.myPlayerIndex}
-      />
+      <>
+        <OnlineStatusNotification />
+        <GameScreen
+          state={state}
+          legalActions={legalActions}
+          passTurnCountdown={null}
+          onDraw={onDraw}
+          onPassTurn={onPassTurn}
+          onPlayCard={onPlayCard}
+          onDumpCard={onDumpCard}
+          onSummonFromPile={onSummonFromPile}
+          onDismissFortuneReading={onDismissFortuneReading}
+          onDismissEventBlocked={onDismissEventBlocked}
+          onLeaveGame={handleLeaveGame}
+          myPlayerIndex={online.myPlayerIndex}
+        />
+      </>
     );
   }
 

@@ -8,6 +8,7 @@ import { useLobby } from '@/context/LobbyContext';
 import { useOnlineGame } from '@/context/OnlineGameContext';
 import { createLobby, joinLobby } from '@/lib/lobby';
 import { isSupabaseConfigured } from '@/lib/supabase';
+import { getRandomThemedName } from '@/utils/themedNames';
 
 const NAME_MAX_LENGTH = 20;
 const LOBBY_CODE_LENGTH = 4;
@@ -167,14 +168,25 @@ export default function OnlineSetupScreen({ onGoToStart }: OnlineSetupScreenProp
             </label>
             <label className="online-setup__label">
               Your Name
-              <input
-                type="text"
-                value={joinName}
-                onChange={(e) => setJoinName(e.target.value.slice(0, NAME_MAX_LENGTH))}
-                placeholder="Your name"
-                className="online-setup__input"
-                maxLength={NAME_MAX_LENGTH}
-              />
+              <div className="start-name-row">
+                <input
+                  type="text"
+                  value={joinName}
+                  onChange={(e) => setJoinName(e.target.value.slice(0, NAME_MAX_LENGTH))}
+                  placeholder="Your name"
+                  className="online-setup__input start-name-row__input"
+                  maxLength={NAME_MAX_LENGTH}
+                />
+                <button
+                  type="button"
+                  onClick={() => setJoinName(getRandomThemedName().slice(0, NAME_MAX_LENGTH))}
+                  className="start-name-row__random"
+                  title="Pick a random themed name"
+                  aria-label="Pick random name"
+                >
+                  Random
+                </button>
+              </div>
             </label>
             {joinError && (
               <p id="join-error" className="online-setup__error" role="alert">
@@ -196,14 +208,25 @@ export default function OnlineSetupScreen({ onGoToStart }: OnlineSetupScreenProp
           <form onSubmit={handleCreateLobby} className="online-setup__form">
             <label className="online-setup__label">
               Your Name
-              <input
-                type="text"
-                value={createName}
-                onChange={(e) => setCreateName(e.target.value.slice(0, NAME_MAX_LENGTH))}
-                placeholder="Your name"
-                className="online-setup__input"
-                maxLength={NAME_MAX_LENGTH}
-              />
+              <div className="start-name-row">
+                <input
+                  type="text"
+                  value={createName}
+                  onChange={(e) => setCreateName(e.target.value.slice(0, NAME_MAX_LENGTH))}
+                  placeholder="Your name"
+                  className="online-setup__input start-name-row__input"
+                  maxLength={NAME_MAX_LENGTH}
+                />
+                <button
+                  type="button"
+                  onClick={() => setCreateName(getRandomThemedName().slice(0, NAME_MAX_LENGTH))}
+                  className="start-name-row__random"
+                  title="Pick a random themed name"
+                  aria-label="Pick random name"
+                >
+                  Random
+                </button>
+              </div>
             </label>
             {createError && (
               <p className="online-setup__error" role="alert">
