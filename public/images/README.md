@@ -15,6 +15,3 @@ Optional (for future use):
 
 - **Logo:** If `hw_logo.png` is missing, the site shows the text “Heroes & Wizards” instead.
 - **Divider:** If `hw_horizontal_divider.png` is missing, the footer simply omits the divider image.
-
-
---- do I need this?
