@@ -11,6 +11,8 @@ on:
 
 jobs:
   sync:
+    # Only run in the private repo (where PUBLIC_REPO is set). Skip when this workflow runs on the public repo after a sync push.
+    if: vars.PUBLIC_REPO != ''
     runs-on: ubuntu-latest
     env:
       PUBLIC_REPO: ${{ vars.PUBLIC_REPO }}
