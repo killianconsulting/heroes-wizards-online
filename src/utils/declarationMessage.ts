@@ -76,6 +76,10 @@ export function getDeclarationMessage(
 
   if (isEventCard(card)) {
     const eventId: EventId = card.eventId;
+    if (target?.playerIndex === -1) {
+      message = `${playerName} played ${card.name} with no effect because there was no eligible target.`;
+      return withStargazerNote(message, state, idx);
+    }
     if (eventId === 'hunting_expedition' && target?.playerIndex !== undefined) {
       const targetName = state.players[target.playerIndex]?.name ?? 'a player';
       message = `${playerName} is stealing a card from ${targetName}.`;
