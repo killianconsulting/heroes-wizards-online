@@ -17,9 +17,13 @@ import ActionBar from './ActionBar';
 import TargetSelector from './TargetSelector';
 import CardZoomModal from './CardZoomModal';
 import FortuneReadingModal from './FortuneReadingModal';
+import HuntingCardPickModal from './HuntingCardPickModal';
 import EventBlockedNotification from './EventBlockedNotification';
 import PlayCardDeclarationModal from './PlayCardDeclarationModal';
 import DrawDeclarationModal from './DrawDeclarationModal';
+import DumpDeclarationModal from './DumpDeclarationModal';
+import SummonDeclarationModal from './SummonDeclarationModal';
+import EventPileModal from './EventPileModal';
 import GameLogo from './GameLogo';
 import Card from './Card';
 
@@ -36,6 +40,8 @@ interface GameScreenProps {
   onDismissFortuneReading: () => void;
   onDismissEventBlocked: () => void;
   onDismissDrawDeclaration?: () => void;
+  onDismissDumpDeclaration?: () => void;
+  onDismissSummonDeclaration?: () => void;
   onLeaveGame: () => void;
   /** Online mode: this client's player index; only show this hand and enable actions when it's this player's turn. */
   myPlayerIndex?: number;
@@ -46,6 +52,8 @@ interface GameScreenProps {
   onPlayCardWithDeclarationDisplay?: (cardId: number) => void;
   /** Event with target (e.g. steal): play immediately and show declaration to others only. */
   onPlayCardWithDeclarationDisplayForEvent?: (cardId: number, target: EventTarget) => void;
+  /** Event with no target (e.g. Fortune Reading): play immediately, active player gets modal, others see declaration. */
+  onPlayCardWithDeclarationDisplayForEventNoTarget?: (cardId: number) => void;
   onDismissPlayDeclarationDisplay?: () => void;
 }
 
@@ -59,54 +67,6 @@ const EMPTY_LEGAL: ReturnType<typeof import('@/engine/validation').getLegalActio
   canPassTurn: false,
 };
 
-/** Step 2 of Hunting Expedition: pick a card from the target player's hand (after declaration). */
-function HuntingCardPickStep({
-  state,
-  targetPlayerIndex,
-  onConfirm,
-}: {
-  state: GameState;
-  targetPlayerIndex: number;
-  onConfirm: (cardId: number) => void;
-}) {
-  const [selectedCardId, setSelectedCardId] = useState<number | null>(null);
-  const targetPlayer = state.players[targetPlayerIndex];
-  if (!targetPlayer) return null;
-  return (
-    <div className="target-selector">
-      <p className="target-selector__prompt">
-        Choose a card to steal from {targetPlayer.name}&apos;s hand:
-      </p>
-      <div className="target-selector__cards">
-        {targetPlayer.hand.map((id) => (
-          <div key={id} className="target-selector__card-row">
-            <Card
-              cardId={id}
-              onClick={() => setSelectedCardId(selectedCardId === id ? null : id)}
-              className={
-                selectedCardId === id
-                  ? 'target-selector__card target-selector__card--selected'
-                  : 'target-selector__card'
-              }
-              highlight={selectedCardId === id}
-            />
-          </div>
-        ))}
-      </div>
-      <div className="target-selector__actions">
-        <button
-          type="button"
-          onClick={() => selectedCardId !== null && onConfirm(selectedCardId)}
-          disabled={selectedCardId === null}
-          className="target-selector__btn target-selector__btn--confirm"
-        >
-          OK – Steal this card
-        </button>
-      </div>
-    </div>
-  );
-}
-
 export default function GameScreen({
   state,
   legalActions,
@@ -119,12 +79,15 @@ export default function GameScreen({
   onDismissFortuneReading,
   onDismissEventBlocked,
   onDismissDrawDeclaration,
+  onDismissDumpDeclaration,
+  onDismissSummonDeclaration,
   onLeaveGame,
   myPlayerIndex,
   onDeclarePlay,
   onConfirmDeclaration,
   onPlayCardWithDeclarationDisplay,
   onPlayCardWithDeclarationDisplayForEvent,
+  onPlayCardWithDeclarationDisplayForEventNoTarget,
   onDismissPlayDeclarationDisplay,
 }: GameScreenProps) {
   const [selectedCardId, setSelectedCardId] = useState<number | null>(null);
@@ -136,8 +99,11 @@ export default function GameScreen({
   );
   /** When Summoner picks from event pile: card selected for confirmation (zoom + "Take this card"). */
   const [pendingSummonCardId, setPendingSummonCardId] = useState<number | null>(null);
-  /** Optimistic dismiss: hide draw modal as soon as user clicks OK or countdown ends, so game doesn't stay stuck if host broadcast is delayed. */
+  /** Optimistic dismiss: hide draw/dump modals as soon as user clicks OK or countdown ends, so game doesn't stay stuck if host broadcast is delayed. */
   const [drawDeclarationDismissed, setDrawDeclarationDismissed] = useState(false);
+  const [dumpDeclarationDismissed, setDumpDeclarationDismissed] = useState(false);
+  const [summonDeclarationDismissed, setSummonDeclarationDismissed] = useState(false);
+  const [eventPileModalOpen, setEventPileModalOpen] = useState(false);
   const { requestLeaveGame } = useLeaveGame();
 
   useEffect(() => {
@@ -145,6 +111,18 @@ export default function GameScreen({
       setDrawDeclarationDismissed(false);
     }
   }, [state.pendingDrawDeclaration]);
+
+  useEffect(() => {
+    if (state.pendingDumpDeclaration === undefined) {
+      setDumpDeclarationDismissed(false);
+    }
+  }, [state.pendingDumpDeclaration]);
+
+  useEffect(() => {
+    if (state.pendingSummonDeclaration === undefined) {
+      setSummonDeclarationDismissed(false);
+    }
+  }, [state.pendingSummonDeclaration]);
 
   const currentIndex = state.currentPlayerIndex;
   const currentPlayer = state.players[currentIndex];
@@ -195,6 +173,11 @@ export default function GameScreen({
       setSelectedCardId(null);
       return;
     }
+    if (useDeclarationFlow && isEventCard(card) && !eventNeedsTarget(selectedCardId) && onPlayCardWithDeclarationDisplayForEventNoTarget) {
+      onPlayCardWithDeclarationDisplayForEventNoTarget(selectedCardId);
+      setSelectedCardId(null);
+      return;
+    }
     if (useDeclarationFlow && onDeclarePlay) {
       onDeclarePlay(selectedCardId);
       setSelectedCardId(null);
@@ -202,7 +185,7 @@ export default function GameScreen({
       onPlayCard(selectedCardId);
       setSelectedCardId(null);
     }
-  }, [selectedCardId, effectiveLegal.playableCardIds, useDeclarationFlow, onPlayCardWithDeclarationDisplay, onDeclarePlay, onPlayCard]);
+  }, [selectedCardId, effectiveLegal.playableCardIds, useDeclarationFlow, onPlayCardWithDeclarationDisplay, onPlayCardWithDeclarationDisplayForEventNoTarget, onDeclarePlay, onPlayCard]);
 
   const handleTargetSelected = useCallback(
     (target: EventTarget) => {
@@ -242,6 +225,12 @@ export default function GameScreen({
 
   return (
     <main className="game-screen">
+      {eventPileModalOpen && (
+        <EventPileModal
+          cardIds={state.eventPile}
+          onDismiss={() => setEventPileModalOpen(false)}
+        />
+      )}
       {zoomedCard && (
         <CardZoomModal
           cardId={zoomedCard.cardId}
@@ -289,6 +278,28 @@ export default function GameScreen({
           }}
         />
       )}
+      {state.pendingDumpDeclaration !== undefined &&
+        !dumpDeclarationDismissed &&
+        (myPlayerIndex === undefined || myPlayerIndex !== state.pendingDumpDeclaration) && (
+        <DumpDeclarationModal
+          playerName={state.players[state.pendingDumpDeclaration]?.name ?? 'A player'}
+          onDismiss={() => {
+            setDumpDeclarationDismissed(true);
+            onDismissDumpDeclaration?.();
+          }}
+        />
+      )}
+      {state.pendingSummonDeclaration !== undefined &&
+        !summonDeclarationDismissed &&
+        (myPlayerIndex === undefined || myPlayerIndex !== state.pendingSummonDeclaration) && (
+        <SummonDeclarationModal
+          playerName={state.players[state.pendingSummonDeclaration]?.name ?? 'A player'}
+          onDismiss={() => {
+            setSummonDeclarationDismissed(true);
+            onDismissSummonDeclaration?.();
+          }}
+        />
+      )}
       {state.pendingPlayDeclarationDisplay && (myPlayerIndex === undefined || myPlayerIndex !== state.pendingPlayDeclarationDisplay.playerIndex) && (
         <PlayCardDeclarationModal
           cardId={state.pendingPlayDeclarationDisplay.cardId}
@@ -311,20 +322,18 @@ export default function GameScreen({
         />
       )}
       {showHuntingCardPicker && pendingDecl && pendingDecl.target?.playerIndex !== undefined && (
-        <section className="game-target">
-          <HuntingCardPickStep
-            state={state}
-            targetPlayerIndex={pendingDecl.target.playerIndex}
-            onConfirm={(cardId) =>
-              onPlayCardWithDeclarationDisplayForEvent
-                ? onPlayCardWithDeclarationDisplayForEvent(pendingDecl.cardId, {
-                    playerIndex: pendingDecl.target!.playerIndex,
-                    cardId,
-                  })
-                : onConfirmDeclaration?.({ playerIndex: pendingDecl.target!.playerIndex, cardId })
-            }
-          />
-        </section>
+        <HuntingCardPickModal
+          state={state}
+          targetPlayerIndex={pendingDecl.target.playerIndex}
+          onConfirm={(cardId) =>
+            onPlayCardWithDeclarationDisplayForEvent
+              ? onPlayCardWithDeclarationDisplayForEvent(pendingDecl.cardId, {
+                  playerIndex: pendingDecl.target!.playerIndex,
+                  cardId,
+                })
+              : onConfirmDeclaration?.({ playerIndex: pendingDecl.target!.playerIndex, cardId })
+          }
+        />
       )}
       <header className="game-header">
         <button
@@ -432,7 +441,11 @@ export default function GameScreen({
                             : undefined
                         }
                         pickable={!!effectiveLegal?.canSummonFromPile}
-                        onZoomCard={(id) => setZoomedCard({ cardId: id })}
+                        onViewPile={
+                          !effectiveLegal?.canSummonFromPile
+                            ? () => setEventPileModalOpen(true)
+                            : undefined
+                        }
                       />
                     </div>
                   </div>

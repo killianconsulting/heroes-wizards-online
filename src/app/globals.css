@@ -1644,6 +1644,323 @@ body {
   filter: brightness(1.15);
 }
 
+/* ----- Dump card declaration (same structure as draw) ----- */
+.dump-declaration {
+  position: fixed;
+  inset: 0;
+  z-index: 108;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.dump-declaration__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+}
+
+.dump-declaration__content {
+  position: relative;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.25rem;
+  background: linear-gradient(135deg, #2d1f0f 0%, #1a1208 100%);
+  border: 2px solid var(--accent-quest);
+  border-radius: 0.75rem;
+  padding: 1rem 1.25rem;
+  max-width: min(28rem, 95vw);
+  box-shadow: 0 0 1rem rgba(180, 120, 60, 0.3);
+}
+
+.dump-declaration__message {
+  font-size: 1rem;
+  color: var(--text);
+  margin: 0;
+  flex: 1;
+}
+
+.dump-declaration__actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-shrink: 0;
+}
+
+.dump-declaration__countdown {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--accent-quest);
+  min-width: 1.5rem;
+  text-align: center;
+}
+
+.dump-declaration__ok {
+  padding: 0.5rem 1.25rem;
+  font-size: 1rem;
+  font-weight: 600;
+  background: var(--accent-quest);
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  cursor: pointer;
+}
+
+.dump-declaration__ok:hover {
+  filter: brightness(1.15);
+}
+
+/* ----- Summoner declaration ----- */
+.summon-declaration {
+  position: fixed;
+  inset: 0;
+  z-index: 108;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.summon-declaration__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+}
+
+.summon-declaration__content {
+  position: relative;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.25rem;
+  background: linear-gradient(135deg, #2d1f0f 0%, #1a1208 100%);
+  border: 2px solid var(--accent-wizard);
+  border-radius: 0.75rem;
+  padding: 1rem 1.25rem;
+  max-width: min(36rem, 95vw);
+  box-shadow: 0 0 1rem rgba(180, 120, 60, 0.3);
+}
+
+.summon-declaration__message {
+  font-size: 1rem;
+  color: var(--text);
+  margin: 0;
+  flex: 1;
+}
+
+.summon-declaration__actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-shrink: 0;
+}
+
+.summon-declaration__countdown {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--accent-wizard);
+  min-width: 1.5rem;
+  text-align: center;
+}
+
+.summon-declaration__ok {
+  padding: 0.5rem 1.25rem;
+  font-size: 1rem;
+  font-weight: 600;
+  background: var(--accent-wizard);
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  cursor: pointer;
+}
+
+.summon-declaration__ok:hover {
+  filter: brightness(1.15);
+}
+
+/* ----- Event pile view modal ----- */
+.event-pile-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 110;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.event-pile-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+}
+
+.event-pile-modal__content {
+  position: relative;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  padding: 1.25rem;
+  max-width: 90vw;
+  max-height: 90vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.event-pile-modal__title {
+  font-size: 1.25rem;
+  margin: 0;
+  color: var(--text);
+}
+
+.event-pile-modal__subtitle {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.event-pile-modal__cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: flex-start;
+}
+
+.event-pile-modal__empty {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin: 0;
+  font-style: italic;
+}
+
+.event-pile-modal__card {
+  cursor: pointer;
+}
+
+.event-pile-modal__card .card__img,
+.event-pile-modal__card .card__placeholder {
+  max-width: 80px;
+}
+
+.event-pile-modal__card .card__placeholder {
+  width: 80px;
+  height: 112px;
+  font-size: 0.65rem;
+}
+
+.event-pile-modal__ok {
+  align-self: flex-end;
+  padding: 0.5rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  background: var(--accent-event);
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  cursor: pointer;
+}
+
+.event-pile-modal__ok:hover {
+  filter: brightness(1.15);
+}
+
+/* ----- Hunting Expedition card pick modal ----- */
+.hunting-card-pick {
+  position: fixed;
+  inset: 0;
+  z-index: 108;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.hunting-card-pick__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+}
+
+.hunting-card-pick__content {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  background: linear-gradient(135deg, #2d1f0f 0%, #1a1208 100%);
+  border: 2px solid var(--accent-event);
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  max-width: min(32rem, 95vw);
+  box-shadow: 0 0 1.5rem rgba(180, 120, 60, 0.35);
+}
+
+.hunting-card-pick__title {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.hunting-card-pick__cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.hunting-card-pick__card-row {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.hunting-card-pick__card.hunting-card-pick__card--selected {
+  outline: 3px solid var(--highlight);
+  outline-offset: 2px;
+}
+
+.hunting-card-pick__card .card__img,
+.hunting-card-pick__card .card__placeholder {
+  max-width: 80px;
+}
+
+.hunting-card-pick__card .card__placeholder {
+  width: 80px;
+  height: 112px;
+  font-size: 0.65rem;
+}
+
+.hunting-card-pick__actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.hunting-card-pick__ok {
+  padding: 0.5rem 1.25rem;
+  font-size: 1rem;
+  font-weight: 600;
+  background: var(--accent-event);
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  cursor: pointer;
+}
+
+.hunting-card-pick__ok:hover:not(:disabled) {
+  filter: brightness(1.15);
+}
+
+.hunting-card-pick__ok:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 /* ----- Online status notification (low-key) ----- */
 .online-status {
   position: fixed;
@@ -1842,6 +2159,14 @@ body {
 .event-pile__count {
   font-size: 0.8rem;
   color: var(--text-muted);
+}
+
+.event-pile--clickable {
+  cursor: pointer;
+}
+
+.event-pile--clickable .event-pile__top {
+  cursor: pointer;
 }
 
 .event-pile--empty {

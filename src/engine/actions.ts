@@ -174,6 +174,24 @@ export function playCardWithDeclarationDisplayForEvent(
 }
 
 /**
+ * Play an event card with no target immediately (e.g. Fortune Reading) and set pendingPlayDeclarationDisplay
+ * so other players see the declaration. Active player gets the effect immediately (e.g. Fortune Reading modal).
+ */
+export function playCardWithDeclarationDisplayForEventNoTarget(state: GameState, cardId: CardId): GameState {
+  const card = getCard(cardId);
+  if (!isEventCard(card)) return state;
+  const currentIndex = state.currentPlayerIndex;
+  const message = getDeclarationMessage(state, cardId, undefined, currentIndex);
+  const next = playCard(state, cardId);
+  if (next === state) return state;
+  return {
+    ...next,
+    pendingPlayDeclaration: undefined,
+    pendingPlayDeclarationDisplay: { cardId, playerIndex: currentIndex, message },
+  };
+}
+
+/**
  * Dismiss the display-only play declaration (hero/wizard/event already applied).
  */
 export function dismissPlayDeclarationDisplay(state: GameState): GameState {
@@ -292,7 +310,16 @@ export function dumpCard(state: GameState, cardId: CardId): GameState {
     players,
     eventPile,
     actedThisTurn: true,
+    pendingDumpDeclaration: currentIndex,
   };
+}
+
+/**
+ * Dismiss the "X dumped a card" declaration (clears pendingDumpDeclaration).
+ */
+export function dismissDumpDeclaration(state: GameState): GameState {
+  if (state.pendingDumpDeclaration === undefined) return state;
+  return { ...state, pendingDumpDeclaration: undefined };
 }
 
 /**
@@ -323,14 +350,27 @@ export function summonFromEventPile(state: GameState, cardId: CardId): GameState
     players,
     eventPile: newEventPile,
     actedThisTurn: true,
+    pendingSummonDeclaration: currentIndex,
   };
+}
+
+/**
+ * Dismiss the "X used the Summoner to take a card from the Event Pile" declaration.
+ */
+export function dismissSummonDeclaration(state: GameState): GameState {
+  if (state.pendingSummonDeclaration === undefined) return state;
+  return { ...state, pendingSummonDeclaration: undefined };
 }
 
 const EMPTY_INACTIVE: number[] = [];
 
+/** Grace period (ms) before ending 2-player game when opponent disconnects. Allows reconnection after tab switch. */
+export const DISCONNECT_GRACE_PERIOD_MS = 3 * 60 * 1000; // 3 minutes
+
 /**
  * Mark that a player left or disconnected.
- * - 2 players: end game, remaining player wins.
+ * - 2 players + explicit leave: end game, remaining player wins.
+ * - 2 players + disconnect: add to disconnected, start grace period (don't end immediately).
  * - 3+ players: add to disconnected (can rejoin) or left (no rejoin); skip their turn; game continues.
  */
 export function playerLeft(
@@ -340,7 +380,7 @@ export function playerLeft(
 ): GameState {
   if (state.phase === 'gameOver' || state.winnerPlayerId) return state;
   const n = state.players.length;
-  if (n <= 2) {
+  if (n <= 2 && reason === 'leave') {
     const remainingIndices = state.players
       .map((_, i) => i)
       .filter((i) => i !== leftPlayerIndex);
@@ -352,8 +392,12 @@ export function playerLeft(
   }
   const disconnected = [...(state.disconnectedPlayerIndices ?? EMPTY_INACTIVE)];
   const left = [...(state.leftPlayerIndices ?? EMPTY_INACTIVE)];
+  const disconnectedAt = { ...(state.disconnectedAt ?? {}) };
   if (reason === 'disconnect') {
-    if (!disconnected.includes(leftPlayerIndex)) disconnected.push(leftPlayerIndex);
+    if (!disconnected.includes(leftPlayerIndex)) {
+      disconnected.push(leftPlayerIndex);
+      disconnectedAt[leftPlayerIndex] = Date.now();
+    }
   } else {
     if (!left.includes(leftPlayerIndex)) left.push(leftPlayerIndex);
   }
@@ -361,6 +405,7 @@ export function playerLeft(
     ...state,
     disconnectedPlayerIndices: disconnected,
     leftPlayerIndices: left,
+    disconnectedAt,
   };
   if (next.currentPlayerIndex === leftPlayerIndex) {
     next = advanceTurn(next);
@@ -378,6 +423,22 @@ export function playerLeft(
 }
 
 /**
+ * End 2-player game after disconnect grace period expired. Remaining player wins.
+ */
+export function endGameDueToDisconnect(state: GameState, leftPlayerIndex: number): GameState {
+  if (state.phase === 'gameOver' || state.winnerPlayerId) return state;
+  const n = state.players.length;
+  if (n !== 2) return state;
+  const remainingIndex = state.players.findIndex((_, i) => i !== leftPlayerIndex);
+  if (remainingIndex === -1) return state;
+  return {
+    ...state,
+    phase: 'gameOver' as const,
+    winnerPlayerId: state.players[remainingIndex].id,
+  };
+}
+
+/**
  * Mark that a disconnected player reconnected. Removes them from disconnected list.
  */
 export function playerReconnected(state: GameState, playerIndex: number): GameState {
@@ -385,5 +446,7 @@ export function playerReconnected(state: GameState, playerIndex: number): GameSt
   const disconnected = (state.disconnectedPlayerIndices ?? EMPTY_INACTIVE).filter(
     (i) => i !== playerIndex
   );
-  return { ...state, disconnectedPlayerIndices: disconnected };
+  const disconnectedAt = { ...(state.disconnectedAt ?? {}) };
+  delete disconnectedAt[playerIndex];
+  return { ...state, disconnectedPlayerIndices: disconnected, disconnectedAt };
 }

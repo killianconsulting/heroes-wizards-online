@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { createGame } from '@/engine/setup';
-import { drawCard, playCard, declarePlay, confirmDeclaration, playCardWithDeclarationDisplay, playCardWithDeclarationDisplayForEvent, dismissPlayDeclarationDisplay, dumpCard, summonFromEventPile, passTurn, dismissFortuneReading, dismissEventBlocked, dismissDrawDeclaration } from '@/engine/actions';
+import { drawCard, playCard, declarePlay, confirmDeclaration, playCardWithDeclarationDisplay, playCardWithDeclarationDisplayForEvent, playCardWithDeclarationDisplayForEventNoTarget, dismissPlayDeclarationDisplay, dumpCard, summonFromEventPile, passTurn, dismissFortuneReading, dismissEventBlocked, dismissDrawDeclaration, dismissDumpDeclaration, dismissSummonDeclaration } from '@/engine/actions';
 import { getLegalActions } from '@/engine/validation';
 import type { GameState } from '@/engine/state';
 import type { EventTarget } from '@/engine/events';
@@ -81,6 +81,14 @@ export function useGameState() {
     [state]
   );
 
+  const handlePlayCardWithDeclarationDisplayForEventNoTarget = useCallback(
+    (cardId: number) => {
+      if (!state) return;
+      setState(playCardWithDeclarationDisplayForEventNoTarget(state, cardId));
+    },
+    [state]
+  );
+
   const handleDismissPlayDeclarationDisplay = useCallback(() => {
     if (!state) return;
     setState(dismissPlayDeclarationDisplay(state));
@@ -117,6 +125,16 @@ export function useGameState() {
     setState(dismissDrawDeclaration(state));
   }, [state]);
 
+  const handleDismissDumpDeclaration = useCallback(() => {
+    if (!state) return;
+    setState(dismissDumpDeclaration(state));
+  }, [state]);
+
+  const handleDismissSummonDeclaration = useCallback(() => {
+    if (!state) return;
+    setState(dismissSummonDeclaration(state));
+  }, [state]);
+
   // When pass-turn countdown is active, tick every second and advance turn at 0.
   useEffect(() => {
     if (passTurnCountdown === null || passTurnCountdown <= 0) return;
@@ -146,11 +164,14 @@ export function useGameState() {
     handleConfirmDeclaration,
     handlePlayCardWithDeclarationDisplay,
     handlePlayCardWithDeclarationDisplayForEvent,
+    handlePlayCardWithDeclarationDisplayForEventNoTarget,
     handleDismissPlayDeclarationDisplay,
     handleDumpCard,
     handleSummonFromPile,
     handleDismissFortuneReading,
     handleDismissEventBlocked,
     handleDismissDrawDeclaration,
+    handleDismissDumpDeclaration,
+    handleDismissSummonDeclaration,
   };
 }

@@ -10,6 +10,7 @@ import {
   confirmDeclaration,
   playCardWithDeclarationDisplay,
   playCardWithDeclarationDisplayForEvent,
+  playCardWithDeclarationDisplayForEventNoTarget,
   dismissPlayDeclarationDisplay,
   dumpCard,
   summonFromEventPile,
@@ -17,6 +18,9 @@ import {
   dismissFortuneReading,
   dismissEventBlocked,
   dismissDrawDeclaration,
+  dismissDumpDeclaration,
+  dismissSummonDeclaration,
+  endGameDueToDisconnect,
 } from '@/engine/actions';
 
 export type GameAction =
@@ -27,12 +31,16 @@ export type GameAction =
   | { type: 'confirmDeclaration'; fullTarget?: EventTarget }
   | { type: 'playCardWithDeclarationDisplay'; cardId: number }
   | { type: 'playCardWithDeclarationDisplayForEvent'; cardId: number; target: EventTarget }
+  | { type: 'playCardWithDeclarationDisplayForEventNoTarget'; cardId: number }
   | { type: 'dismissPlayDeclarationDisplay' }
   | { type: 'dumpCard'; cardId: number }
   | { type: 'summonFromPile'; cardId: number }
   | { type: 'dismissFortuneReading' }
   | { type: 'dismissEventBlocked' }
-  | { type: 'dismissDrawDeclaration' };
+  | { type: 'dismissDrawDeclaration' }
+  | { type: 'dismissDumpDeclaration' }
+  | { type: 'dismissSummonDeclaration' }
+  | { type: 'endGameDueToDisconnect'; leftPlayerIndex: number };
 
 export interface GameStartPayload {
   state: GameState;
@@ -285,6 +293,8 @@ export function applyAction(state: GameState, action: GameAction): GameState {
       return playCardWithDeclarationDisplay(state, action.cardId);
     case 'playCardWithDeclarationDisplayForEvent':
       return playCardWithDeclarationDisplayForEvent(state, action.cardId, action.target);
+    case 'playCardWithDeclarationDisplayForEventNoTarget':
+      return playCardWithDeclarationDisplayForEventNoTarget(state, action.cardId);
     case 'dismissPlayDeclarationDisplay':
       return dismissPlayDeclarationDisplay(state);
     case 'dumpCard':
@@ -297,6 +307,12 @@ export function applyAction(state: GameState, action: GameAction): GameState {
       return dismissEventBlocked(state);
     case 'dismissDrawDeclaration':
       return dismissDrawDeclaration(state);
+    case 'dismissDumpDeclaration':
+      return dismissDumpDeclaration(state);
+    case 'dismissSummonDeclaration':
+      return dismissSummonDeclaration(state);
+    case 'endGameDueToDisconnect':
+      return endGameDueToDisconnect(state, action.leftPlayerIndex);
     default:
       return state;
   }

@@ -81,13 +81,17 @@ export function getDeclarationMessage(
       message = `${playerName} is stealing a card from ${targetName}.`;
       return withStargazerNote(message, state, idx);
     }
+    if (eventId === 'wizard_tower_repairs' && target?.playerIndex !== undefined) {
+      const targetName = state.players[target.playerIndex]?.name ?? 'a player';
+      message = `${playerName} is sending ${targetName}'s Wizard to the Event Pile.`;
+      return withStargazerNote(message, state, idx);
+    }
     if (
       (eventId === 'archery_contest' ||
         eventId === 'royal_invitation' ||
         eventId === 'tavern_brawl' ||
         eventId === 'unguarded_treasure' ||
-        eventId === 'spell_of_summoning' ||
-        eventId === 'wizard_tower_repairs') &&
+        eventId === 'spell_of_summoning') &&
       target?.playerIndex !== undefined
     ) {
       const targetName = state.players[target.playerIndex]?.name ?? 'a player';
@@ -100,9 +104,7 @@ export function getDeclarationMessage(
               ? 'Barbarian'
               : eventId === 'unguarded_treasure'
                 ? 'Thief'
-                : eventId === 'spell_of_summoning'
-                  ? 'Wizard'
-                  : 'Wizard';
+                : 'Wizard';
       message = `${playerName} is targeting ${targetName} (${slot}).`;
       return withStargazerNote(message, state, idx);
     }

@@ -106,6 +106,14 @@ export default function GameWrapper() {
       if (online.isHost) online.applyActionAndBroadcast({ type: 'dismissDrawDeclaration' });
       else online.sendAction({ type: 'dismissDrawDeclaration' });
     };
+    const onDismissDumpDeclaration = () => {
+      if (online.isHost) online.applyActionAndBroadcast({ type: 'dismissDumpDeclaration' });
+      else online.sendAction({ type: 'dismissDumpDeclaration' });
+    };
+    const onDismissSummonDeclaration = () => {
+      if (online.isHost) online.applyActionAndBroadcast({ type: 'dismissSummonDeclaration' });
+      else online.sendAction({ type: 'dismissSummonDeclaration' });
+    };
     const onPlayCardWithDeclarationDisplay = (cardId: number) => {
       if (online.isHost) online.applyActionAndBroadcast({ type: 'playCardWithDeclarationDisplay', cardId });
       else online.sendAction({ type: 'playCardWithDeclarationDisplay', cardId });
@@ -113,6 +121,10 @@ export default function GameWrapper() {
     const onPlayCardWithDeclarationDisplayForEvent = (cardId: number, target: import('@/engine/events').EventTarget) => {
       if (online.isHost) online.applyActionAndBroadcast({ type: 'playCardWithDeclarationDisplayForEvent', cardId, target });
       else online.sendAction({ type: 'playCardWithDeclarationDisplayForEvent', cardId, target });
+    };
+    const onPlayCardWithDeclarationDisplayForEventNoTarget = (cardId: number) => {
+      if (online.isHost) online.applyActionAndBroadcast({ type: 'playCardWithDeclarationDisplayForEventNoTarget', cardId });
+      else online.sendAction({ type: 'playCardWithDeclarationDisplayForEventNoTarget', cardId });
     };
     const onDismissPlayDeclarationDisplay = () => {
       if (online.isHost) online.applyActionAndBroadcast({ type: 'dismissPlayDeclarationDisplay' });
@@ -136,8 +148,11 @@ export default function GameWrapper() {
           onDismissFortuneReading={onDismissFortuneReading}
           onDismissEventBlocked={onDismissEventBlocked}
           onDismissDrawDeclaration={onDismissDrawDeclaration}
+          onDismissDumpDeclaration={onDismissDumpDeclaration}
+          onDismissSummonDeclaration={onDismissSummonDeclaration}
           onPlayCardWithDeclarationDisplay={onPlayCardWithDeclarationDisplay}
           onPlayCardWithDeclarationDisplayForEvent={onPlayCardWithDeclarationDisplayForEvent}
+          onPlayCardWithDeclarationDisplayForEventNoTarget={onPlayCardWithDeclarationDisplayForEventNoTarget}
           onDismissPlayDeclarationDisplay={onDismissPlayDeclarationDisplay}
           onLeaveGame={handleLeaveGame}
           myPlayerIndex={online.myPlayerIndex}
@@ -158,12 +173,15 @@ export default function GameWrapper() {
       onConfirmDeclaration={local.handleConfirmDeclaration}
       onPlayCardWithDeclarationDisplay={local.handlePlayCardWithDeclarationDisplay}
       onPlayCardWithDeclarationDisplayForEvent={local.handlePlayCardWithDeclarationDisplayForEvent}
+      onPlayCardWithDeclarationDisplayForEventNoTarget={local.handlePlayCardWithDeclarationDisplayForEventNoTarget}
       onDismissPlayDeclarationDisplay={local.handleDismissPlayDeclarationDisplay}
       onDumpCard={local.handleDumpCard}
       onSummonFromPile={local.handleSummonFromPile}
       onDismissFortuneReading={local.handleDismissFortuneReading}
       onDismissEventBlocked={local.handleDismissEventBlocked}
       onDismissDrawDeclaration={local.handleDismissDrawDeclaration}
+      onDismissDumpDeclaration={local.handleDismissDumpDeclaration}
+      onDismissSummonDeclaration={local.handleDismissSummonDeclaration}
       onLeaveGame={handleLeaveGame}
     />
   );
