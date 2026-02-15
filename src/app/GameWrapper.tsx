@@ -78,6 +78,14 @@ export default function GameWrapper() {
       if (online.isHost) online.applyActionAndBroadcast({ type: 'playCard', cardId, target });
       else online.sendAction({ type: 'playCard', cardId, target });
     };
+    const onDeclarePlay = (cardId: number, target?: import('@/engine/events').EventTarget) => {
+      if (online.isHost) online.applyActionAndBroadcast({ type: 'declarePlay', cardId, target });
+      else online.sendAction({ type: 'declarePlay', cardId, target });
+    };
+    const onConfirmDeclaration = (fullTarget?: import('@/engine/events').EventTarget) => {
+      if (online.isHost) online.applyActionAndBroadcast({ type: 'confirmDeclaration', fullTarget });
+      else online.sendAction({ type: 'confirmDeclaration', fullTarget });
+    };
     const onDumpCard = (cardId: number) => {
       if (online.isHost) online.applyActionAndBroadcast({ type: 'dumpCard', cardId });
       else online.sendAction({ type: 'dumpCard', cardId });
@@ -105,6 +113,8 @@ export default function GameWrapper() {
           onDraw={onDraw}
           onPassTurn={onPassTurn}
           onPlayCard={onPlayCard}
+          onDeclarePlay={onDeclarePlay}
+          onConfirmDeclaration={onConfirmDeclaration}
           onDumpCard={onDumpCard}
           onSummonFromPile={onSummonFromPile}
           onDismissFortuneReading={onDismissFortuneReading}
@@ -124,6 +134,8 @@ export default function GameWrapper() {
       onDraw={local.handleDraw}
       onPassTurn={local.handlePassTurn}
       onPlayCard={local.handlePlayCard}
+      onDeclarePlay={local.handleDeclarePlay}
+      onConfirmDeclaration={local.handleConfirmDeclaration}
       onDumpCard={local.handleDumpCard}
       onSummonFromPile={local.handleSummonFromPile}
       onDismissFortuneReading={local.handleDismissFortuneReading}

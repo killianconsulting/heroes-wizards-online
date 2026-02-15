@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { createGame } from '@/engine/setup';
-import { drawCard, playCard, dumpCard, summonFromEventPile, passTurn, dismissFortuneReading, dismissEventBlocked } from '@/engine/actions';
+import { drawCard, playCard, declarePlay, confirmDeclaration, dumpCard, summonFromEventPile, passTurn, dismissFortuneReading, dismissEventBlocked } from '@/engine/actions';
 import { getLegalActions } from '@/engine/validation';
 import type { GameState } from '@/engine/state';
 import type { EventTarget } from '@/engine/events';
@@ -45,6 +45,22 @@ export function useGameState() {
     (cardId: number, target?: EventTarget) => {
       if (!state) return;
       setState(playCard(state, cardId, target));
+    },
+    [state]
+  );
+
+  const handleDeclarePlay = useCallback(
+    (cardId: number, target?: EventTarget) => {
+      if (!state) return;
+      setState(declarePlay(state, cardId, target));
+    },
+    [state]
+  );
+
+  const handleConfirmDeclaration = useCallback(
+    (fullTarget?: EventTarget) => {
+      if (!state) return;
+      setState(confirmDeclaration(state, fullTarget));
     },
     [state]
   );
@@ -100,6 +116,8 @@ export function useGameState() {
     handleDraw,
     handlePassTurn,
     handlePlayCard,
+    handleDeclarePlay,
+    handleConfirmDeclaration,
     handleDumpCard,
     handleSummonFromPile,
     handleDismissFortuneReading,

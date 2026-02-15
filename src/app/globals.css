@@ -1472,6 +1472,109 @@ body {
   filter: brightness(1.15);
 }
 
+/* ----- Play card declaration modal (horizontal: card left, message + countdown/OK right) ----- */
+.play-declaration {
+  position: fixed;
+  inset: 0;
+  z-index: 108;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.play-declaration__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+}
+
+.play-declaration__content {
+  position: relative;
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  gap: 1.25rem;
+  background: linear-gradient(135deg, #2d1f0f 0%, #1a1208 100%);
+  border: 2px solid var(--accent-event);
+  border-radius: 0.75rem;
+  padding: 1.25rem;
+  max-width: min(36rem, 95vw);
+  min-height: 10rem;
+  box-shadow: 0 0 1.5rem rgba(180, 120, 60, 0.35);
+}
+
+.play-declaration__card {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.play-declaration__card-inner {
+  width: 100px;
+  height: auto;
+}
+
+.play-declaration__card-inner .card__img {
+  width: 100px;
+  height: auto;
+  max-height: 140px;
+  object-fit: contain;
+}
+
+.play-declaration__card-inner .card__placeholder {
+  width: 100px;
+  min-height: 140px;
+  padding: 0.5rem;
+}
+
+.play-declaration__body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-width: 0;
+}
+
+.play-declaration__message {
+  font-size: 1rem;
+  color: var(--text);
+  line-height: 1.45;
+  margin: 0;
+}
+
+.play-declaration__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.play-declaration__countdown {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--accent-event);
+  min-width: 1.5rem;
+  text-align: center;
+}
+
+.play-declaration__ok {
+  padding: 0.5rem 1.25rem;
+  font-size: 1rem;
+  font-weight: 600;
+  background: var(--accent-event);
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  cursor: pointer;
+}
+
+.play-declaration__ok:hover {
+  filter: brightness(1.15);
+}
+
 /* ----- Online status notification (low-key) ----- */
 .online-status {
   position: fixed;

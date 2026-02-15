@@ -104,6 +104,10 @@ export function getLegalActions(state: GameState): LegalActions {
     return EMPTY_LEGAL;
   }
 
+  if (state.pendingPlayDeclaration) {
+    return EMPTY_LEGAL;
+  }
+
   if (isPlayerInactive(state, state.currentPlayerIndex)) {
     return EMPTY_LEGAL;
   }

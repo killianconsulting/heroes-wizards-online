@@ -58,4 +58,10 @@ export interface GameState {
   pendingFortuneReading?: boolean;
   /** Event was played but effect blocked (e.g. Healer); show notification until dismissed. */
   eventBlocked?: { message: string; targetPlayerName?: string };
+  /** Card play declared but not yet applied; declaration modal shown, then confirmDeclaration runs. */
+  pendingPlayDeclaration?: {
+    cardId: CardId;
+    playerIndex: number;
+    target?: { playerIndex?: number; cardId?: CardId };
+  };
 }

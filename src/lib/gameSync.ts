@@ -1,9 +1,13 @@
 import { supabase } from './supabase';
 import type { GameState } from '@/engine/state';
 import type { EventTarget } from '@/engine/events';
+import { getCard } from '@/data/cards';
+import { isEventCard } from '@/data/types';
 import {
   drawCard,
   playCard,
+  declarePlay,
+  confirmDeclaration,
   dumpCard,
   summonFromEventPile,
   passTurn,
@@ -15,6 +19,8 @@ export type GameAction =
   | { type: 'draw' }
   | { type: 'passTurn' }
   | { type: 'playCard'; cardId: number; target?: EventTarget }
+  | { type: 'declarePlay'; cardId: number; target?: EventTarget }
+  | { type: 'confirmDeclaration'; fullTarget?: EventTarget }
   | { type: 'dumpCard'; cardId: number }
   | { type: 'summonFromPile'; cardId: number }
   | { type: 'dismissFortuneReading' }
@@ -263,6 +269,10 @@ export function applyAction(state: GameState, action: GameAction): GameState {
       return passTurn(state);
     case 'playCard':
       return playCard(state, action.cardId, action.target);
+    case 'declarePlay':
+      return declarePlay(state, action.cardId, action.target);
+    case 'confirmDeclaration':
+      return confirmDeclaration(state, action.fullTarget);
     case 'dumpCard':
       return dumpCard(state, action.cardId);
     case 'summonFromPile':
@@ -274,4 +284,13 @@ export function applyAction(state: GameState, action: GameAction): GameState {
     default:
       return state;
   }
+}
+
+/** True if this declaration is for hunting_expedition awaiting card choice (host should not auto-confirm after 3s). */
+export function isDeclarationAwaitingCardChoice(state: GameState): boolean {
+  const pending = state.pendingPlayDeclaration;
+  if (!pending) return false;
+  const card = getCard(pending.cardId);
+  if (!isEventCard(card) || card.eventId !== 'hunting_expedition') return false;
+  return pending.target?.cardId === undefined;
 }

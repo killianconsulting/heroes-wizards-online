@@ -7,6 +7,7 @@ import type { GameState } from '@/engine/state';
 import type { EventTarget } from '@/engine/events';
 import type { EventId } from '@/data/constants';
 import { eventNeedsTarget } from '@/utils/eventTargets';
+import { getDeclarationMessage } from '@/utils/declarationMessage';
 import { useLeaveGame } from '@/context/LeaveGameContext';
 import Deck from './Deck';
 import EventPile from './EventPile';
@@ -17,7 +18,9 @@ import TargetSelector from './TargetSelector';
 import CardZoomModal from './CardZoomModal';
 import FortuneReadingModal from './FortuneReadingModal';
 import EventBlockedNotification from './EventBlockedNotification';
+import PlayCardDeclarationModal from './PlayCardDeclarationModal';
 import GameLogo from './GameLogo';
+import Card from './Card';
 
 interface GameScreenProps {
   state: GameState;
@@ -34,6 +37,9 @@ interface GameScreenProps {
   onLeaveGame: () => void;
   /** Online mode: this client's player index; only show this hand and enable actions when it's this player's turn. */
   myPlayerIndex?: number;
+  /** When provided, card plays go through declaration modal first (declarePlay → modal → confirmDeclaration). */
+  onDeclarePlay?: (cardId: number, target?: EventTarget) => void;
+  onConfirmDeclaration?: (fullTarget?: EventTarget) => void;
 }
 
 
@@ -45,6 +51,54 @@ const EMPTY_LEGAL: ReturnType<typeof import('@/engine/validation').getLegalActio
   canSummonFromPile: false,
   canPassTurn: false,
 };
+
+/** Step 2 of Hunting Expedition: pick a card from the target player's hand (after declaration). */
+function HuntingCardPickStep({
+  state,
+  targetPlayerIndex,
+  onConfirm,
+}: {
+  state: GameState;
+  targetPlayerIndex: number;
+  onConfirm: (cardId: number) => void;
+}) {
+  const [selectedCardId, setSelectedCardId] = useState<number | null>(null);
+  const targetPlayer = state.players[targetPlayerIndex];
+  if (!targetPlayer) return null;
+  return (
+    <div className="target-selector">
+      <p className="target-selector__prompt">
+        Choose a card to steal from {targetPlayer.name}&apos;s hand:
+      </p>
+      <div className="target-selector__cards">
+        {targetPlayer.hand.map((id) => (
+          <div key={id} className="target-selector__card-row">
+            <Card
+              cardId={id}
+              onClick={() => setSelectedCardId(selectedCardId === id ? null : id)}
+              className={
+                selectedCardId === id
+                  ? 'target-selector__card target-selector__card--selected'
+                  : 'target-selector__card'
+              }
+              highlight={selectedCardId === id}
+            />
+          </div>
+        ))}
+      </div>
+      <div className="target-selector__actions">
+        <button
+          type="button"
+          onClick={() => selectedCardId !== null && onConfirm(selectedCardId)}
+          disabled={selectedCardId === null}
+          className="target-selector__btn target-selector__btn--confirm"
+        >
+          OK – Steal this card
+        </button>
+      </div>
+    </div>
+  );
+}
 
 export default function GameScreen({
   state,
@@ -59,6 +113,8 @@ export default function GameScreen({
   onDismissEventBlocked,
   onLeaveGame,
   myPlayerIndex,
+  onDeclarePlay,
+  onConfirmDeclaration,
 }: GameScreenProps) {
   const [selectedCardId, setSelectedCardId] = useState<number | null>(null);
   const [pendingEvent, setPendingEvent] = useState<{ cardId: number; eventId: EventId } | null>(
@@ -79,6 +135,25 @@ export default function GameScreen({
   const displayPlayer = state.players[displayIndex];
   const effectiveLegal = isMyTurn ? legalActions : EMPTY_LEGAL;
 
+  const useDeclarationFlow = Boolean(onDeclarePlay && onConfirmDeclaration);
+  const pendingDecl = state.pendingPlayDeclaration;
+  const declarationCard = pendingDecl ? getCard(pendingDecl.cardId) : null;
+  const isHuntingDeclaration =
+    pendingDecl &&
+    declarationCard &&
+    isEventCard(declarationCard) &&
+    declarationCard.eventId === 'hunting_expedition';
+  /** Show declaration modal to waiting players (local: everyone; online: not the current player). */
+  const showDeclarationModalToWaiting =
+    pendingDecl && (myPlayerIndex === undefined || currentIndex !== myPlayerIndex);
+  /** For hunting, current player sees card picker; modal for others has no auto-dismiss until play resolves. */
+  const showHuntingCardPicker =
+    useDeclarationFlow &&
+    !!pendingDecl &&
+    isHuntingDeclaration &&
+    isMyTurn &&
+    pendingDecl.target?.playerIndex !== undefined;
+
   /** Clear selection when the selected card is no longer in the displayed player's hand (e.g. after turn/hand change). */
   useEffect(() => {
     if (
@@ -96,18 +171,39 @@ export default function GameScreen({
       setPendingEvent({ cardId: selectedCardId, eventId: card.eventId });
       return;
     }
-    onPlayCard(selectedCardId);
-    setSelectedCardId(null);
-  }, [selectedCardId, effectiveLegal.playableCardIds, onPlayCard]);
+    if (useDeclarationFlow && onDeclarePlay) {
+      onDeclarePlay(selectedCardId);
+      setSelectedCardId(null);
+    } else {
+      onPlayCard(selectedCardId);
+      setSelectedCardId(null);
+    }
+  }, [selectedCardId, effectiveLegal.playableCardIds, useDeclarationFlow, onDeclarePlay, onPlayCard]);
 
   const handleTargetSelected = useCallback(
     (target: EventTarget) => {
       if (!pendingEvent) return;
-      onPlayCard(pendingEvent.cardId, target);
+      if (useDeclarationFlow && onDeclarePlay) {
+        onDeclarePlay(pendingEvent.cardId, target);
+        setPendingEvent(null);
+        setSelectedCardId(null);
+      } else {
+        onPlayCard(pendingEvent.cardId, target);
+        setPendingEvent(null);
+        setSelectedCardId(null);
+      }
+    },
+    [pendingEvent, useDeclarationFlow, onDeclarePlay, onPlayCard]
+  );
+
+  const handleHuntingPlayerChosen = useCallback(
+    (playerIndex: number) => {
+      if (!pendingEvent || !onDeclarePlay) return;
+      onDeclarePlay(pendingEvent.cardId, { playerIndex });
       setPendingEvent(null);
       setSelectedCardId(null);
     },
-    [pendingEvent, onPlayCard]
+    [pendingEvent, onDeclarePlay]
   );
 
   const handleTargetCancel = useCallback(() => {
@@ -152,6 +248,30 @@ export default function GameScreen({
           onDismiss={onDismissEventBlocked}
         />
       )}
+      {useDeclarationFlow && showDeclarationModalToWaiting && pendingDecl && (
+        <PlayCardDeclarationModal
+          cardId={pendingDecl.cardId}
+          message={getDeclarationMessage(
+            state,
+            pendingDecl.cardId,
+            pendingDecl.target,
+            pendingDecl.playerIndex
+          )}
+          onDismiss={() => onConfirmDeclaration?.()}
+          noAutoDismiss={!!isHuntingDeclaration}
+        />
+      )}
+      {showHuntingCardPicker && pendingDecl && pendingDecl.target?.playerIndex !== undefined && (
+        <section className="game-target">
+          <HuntingCardPickStep
+            state={state}
+            targetPlayerIndex={pendingDecl.target.playerIndex}
+            onConfirm={(cardId) =>
+              onConfirmDeclaration?.({ playerIndex: pendingDecl.target!.playerIndex, cardId })
+            }
+          />
+        </section>
+      )}
       <header className="game-header">
         <button
           type="button"
@@ -177,6 +297,11 @@ export default function GameScreen({
             eventId={pendingEvent.eventId}
             onSelect={handleTargetSelected}
             onCancel={handleTargetCancel}
+            onPlayerChosenForDeclaration={
+              pendingEvent.eventId === 'hunting_expedition' && useDeclarationFlow
+                ? handleHuntingPlayerChosen
+                : undefined
+            }
           />
         </section>
       ) : passTurnCountdown !== null ? (

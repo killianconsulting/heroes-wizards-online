@@ -14,6 +14,8 @@ interface TargetSelectorProps {
   eventId: EventId;
   onSelect: (target: EventTarget) => void;
   onCancel: () => void;
+  /** When set (e.g. for hunting_expedition), step 1 calls this with playerIndex instead of showing step 2. */
+  onPlayerChosenForDeclaration?: (playerIndex: number) => void;
 }
 
 export default function TargetSelector({
@@ -21,6 +23,7 @@ export default function TargetSelector({
   eventId,
   onSelect,
   onCancel,
+  onPlayerChosenForDeclaration,
 }: TargetSelectorProps) {
   const [chosenPlayerIndex, setChosenPlayerIndex] = useState<number | null>(null);
   const [selectedCardId, setSelectedCardId] = useState<number | null>(null);
@@ -95,7 +98,13 @@ export default function TargetSelector({
                 <li key={i} className="target-selector__player-row">
                   <button
                     type="button"
-                    onClick={() => setChosenPlayerIndex(i)}
+                    onClick={() => {
+                      if (onPlayerChosenForDeclaration) {
+                        onPlayerChosenForDeclaration(i);
+                      } else {
+                        setChosenPlayerIndex(i);
+                      }
+                    }}
                     className="target-selector__btn target-selector__btn--player"
                   >
                     {state.players[i].name}

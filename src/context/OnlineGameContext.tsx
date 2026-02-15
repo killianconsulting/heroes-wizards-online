@@ -11,7 +11,7 @@ import {
   ReactNode,
 } from 'react';
 import { useLobby } from '@/context/LobbyContext';
-import { subscribeToGameChannel, broadcastGameStart, broadcastGameState, broadcastPlayerLeft, broadcastRequestState, sendAction as sendActionToChannel, applyAction } from '@/lib/gameSync';
+import { subscribeToGameChannel, broadcastGameStart, broadcastGameState, broadcastPlayerLeft, broadcastRequestState, sendAction as sendActionToChannel, applyAction, isDeclarationAwaitingCardChoice } from '@/lib/gameSync';
 import type { GameState } from '@/engine/state';
 import { playerLeft, playerReconnected } from '@/engine/actions';
 import { getActivePlayerIndices } from '@/engine/events';
@@ -106,6 +106,7 @@ export function OnlineGameProvider({ children }: { children: ReactNode }) {
 
   const gameChannelRef = useRef<{ send: (args: object) => Promise<unknown>; track?: (payload: Record<string, unknown>) => void } | null>(null);
   const isGameHostRef = useRef(false);
+  const declarationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const startOnlineGameAsHost = useCallback(
     (state: GameState, order: string[]) => {
@@ -124,6 +125,10 @@ export function OnlineGameProvider({ children }: { children: ReactNode }) {
     if (statusClearTimeoutRef.current) {
       clearTimeout(statusClearTimeoutRef.current);
       statusClearTimeoutRef.current = null;
+    }
+    if (declarationTimerRef.current) {
+      clearTimeout(declarationTimerRef.current);
+      declarationTimerRef.current = null;
     }
     setStatusMessage(null);
     setGameState(null);
@@ -146,9 +151,23 @@ export function OnlineGameProvider({ children }: { children: ReactNode }) {
   const applyActionAndBroadcast = useCallback(
     async (action: GameAction) => {
       if (!gameState || !lobbyId || !isGameHostRef.current) return;
+      if (declarationTimerRef.current) {
+        clearTimeout(declarationTimerRef.current);
+        declarationTimerRef.current = null;
+      }
       const next = applyAction(gameState, action);
       setGameState(next);
       await broadcastGameState(lobbyId, next, gameChannelRef.current, playerOrder);
+      if (action.type === 'declarePlay' && !isDeclarationAwaitingCardChoice(next)) {
+        declarationTimerRef.current = setTimeout(() => {
+          declarationTimerRef.current = null;
+          const stateNow = gameStateRef.current;
+          if (!stateNow?.pendingPlayDeclaration) return;
+          const afterConfirm = applyAction(stateNow, { type: 'confirmDeclaration' });
+          setGameState(afterConfirm);
+          broadcastGameState(lobbyId, afterConfirm, gameChannelRef.current, playerOrderRef.current);
+        }, 3000);
+      }
     },
     [gameState, lobbyId, playerOrder]
   );
@@ -200,7 +219,38 @@ export function OnlineGameProvider({ children }: { children: ReactNode }) {
         if (!isGameHostRef.current) return;
         const current = gameStateRef.current;
         if (!current || payload.fromPlayerIndex !== current.currentPlayerIndex) return;
-        const next = applyAction(current, payload.action);
+        const action = payload.action as import('@/lib/gameSync').GameAction;
+        if (action.type === 'declarePlay') {
+          if (declarationTimerRef.current) {
+            clearTimeout(declarationTimerRef.current);
+            declarationTimerRef.current = null;
+          }
+          const next = applyAction(current, action);
+          setGameState(next);
+          broadcastGameState(lobbyId, next, gameChannelRef.current, playerOrderRef.current);
+          if (!isDeclarationAwaitingCardChoice(next)) {
+            declarationTimerRef.current = setTimeout(() => {
+              declarationTimerRef.current = null;
+              const stateNow = gameStateRef.current;
+              if (!stateNow?.pendingPlayDeclaration) return;
+              const afterConfirm = applyAction(stateNow, { type: 'confirmDeclaration' });
+              setGameState(afterConfirm);
+              broadcastGameState(lobbyId, afterConfirm, gameChannelRef.current, playerOrderRef.current);
+            }, 3000);
+          }
+          return;
+        }
+        if (action.type === 'confirmDeclaration') {
+          if (declarationTimerRef.current) {
+            clearTimeout(declarationTimerRef.current);
+            declarationTimerRef.current = null;
+          }
+          const next = applyAction(current, action);
+          setGameState(next);
+          broadcastGameState(lobbyId, next, gameChannelRef.current, playerOrderRef.current);
+          return;
+        }
+        const next = applyAction(current, action);
         setGameState(next);
         broadcastGameState(lobbyId, next, gameChannelRef.current, playerOrderRef.current);
       },

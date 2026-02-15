@@ -86,6 +86,45 @@ export function dismissEventBlocked(state: GameState): GameState {
 }
 
 /**
+ * Declare a card play without applying it. Sets pendingPlayDeclaration so the UI can show
+ * a declaration modal to (other) players; then confirmDeclaration applies the actual play.
+ * Caller should ensure the current player has the card and target is valid if required.
+ */
+export function declarePlay(
+  state: GameState,
+  cardId: CardId,
+  target?: EventTarget
+): GameState {
+  if (state.phase !== 'chooseAction' || state.winnerPlayerId) return state;
+  if (state.pendingPlayDeclaration) return state;
+
+  const currentIndex = state.currentPlayerIndex;
+  const current = state.players[currentIndex];
+  if (!current.hand.includes(cardId)) return state;
+
+  return {
+    ...state,
+    pendingPlayDeclaration: { cardId, playerIndex: currentIndex, target },
+  };
+}
+
+/**
+ * Apply the declared play and clear pendingPlayDeclaration. For events that need a
+ * two-step target (e.g. hunting_expedition: player then card), pass the full target.
+ */
+export function confirmDeclaration(
+  state: GameState,
+  fullTarget?: EventTarget
+): GameState {
+  const pending = state.pendingPlayDeclaration;
+  if (!pending) return state;
+
+  const target = fullTarget !== undefined ? fullTarget : pending.target;
+  const next = playCard(state, pending.cardId, target);
+  return { ...next, pendingPlayDeclaration: undefined };
+}
+
+/**
  * Play a card from the current player's hand.
  * - Hero/Wizard: add to party (swap existing same type back to hand), advance turn.
  * - Quest: if canPlayQuest, set winner and end game; remove card from hand.
