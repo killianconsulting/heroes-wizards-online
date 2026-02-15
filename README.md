@@ -1,6 +1,10 @@
 # Heroes & Wizards (digital fan version)
 
-A **fan-made**, **non-commercial** web app to play the card game **Heroes & Wizards** in the browser. Built with React and Next.js. Supports **2–5 players** in local hot-seat play (same device) or **online multiplayer** (create/join lobbies with real-time sync via Supabase).
+A **fan-made**, **non-commercial** web app to play the card game **Heroes & Wizards** in the browser. You can play it online at **[heroesandwizards.online](https://www.heroesandwizards.online/)**. Built with React and Next.js. Supports **2–5 players** in local hot-seat play (same device) or **online multiplayer** (create/join lobbies with real-time sync via Supabase).
+
+## Play online
+
+Go to **[https://www.heroesandwizards.online/](https://www.heroesandwizards.online/)** and open a new lobby. Use the lobby code or share the link to invite friends—you can play with 2–5 players. The site has full rules and instructions for first-time players.
 
 ---
 
@@ -62,6 +66,8 @@ If you enjoy the game, please support the original: buy the physical card game f
 - `STYLE_GUIDE.md` — Color palette and typography reference
 - `DESIGN_NOTES.md` — Brand & tone reference
 - `Deck Library and Rules.md` — Card list and rules reference
+
+Report bugs or suggest features on the [Issues](https://github.com/killianconsulting/heroes-wizards-online/issues) page.
 
 ## License
 
