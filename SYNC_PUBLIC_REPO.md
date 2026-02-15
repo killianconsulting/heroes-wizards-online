@@ -6,7 +6,7 @@ This repo can be mirrored to a **public** GitHub repo (without artwork or secret
 
 ### 1. Create the public repo
 
-- On GitHub, create a **new public** repository (e.g. `heroes-wizards-public`).
+- On GitHub, create a **new public** repository (e.g. `heroes-wizards-online`).
 - Do **not** push any content that contains real images or secrets. Leave it empty; the Action will do the first push.
 
 ### 2. Create a deploy key and add it to the public repo
@@ -34,7 +34,7 @@ This repo can be mirrored to a **public** GitHub repo (without artwork or secret
 - In **this (private) repo**: **Settings → Secrets and variables → Actions** → **Variables** tab.
 - Click **New repository variable**.
 - **Name:** `PUBLIC_REPO`
-- **Value:** `owner/repo-name`, e.g. `your-username/heroes-wizards-public`.
+- **Value:** `owner/repo-name`, e.g. `your-username/heroes-wizards-online`.
 
 ## What gets synced
 

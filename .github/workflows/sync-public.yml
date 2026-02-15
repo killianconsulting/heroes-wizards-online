@@ -24,7 +24,7 @@ jobs:
       - name: Require PUBLIC_REPO variable
         run: |
           if [ -z "$PUBLIC_REPO" ]; then
-            echo "::error::Set the Actions variable PUBLIC_REPO (e.g. owner/heroes-wizards-public) in repo Settings → Secrets and variables → Actions."
+            echo "::error::Set the Actions variable PUBLIC_REPO (e.g. owner/heroes-wizards-online) in repo Settings → Secrets and variables → Actions."
             exit 1
           fi
 
