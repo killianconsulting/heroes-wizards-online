@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { createGame } from '@/engine/setup';
-import { drawCard, playCard, declarePlay, confirmDeclaration, dumpCard, summonFromEventPile, passTurn, dismissFortuneReading, dismissEventBlocked } from '@/engine/actions';
+import { drawCard, playCard, declarePlay, confirmDeclaration, dumpCard, summonFromEventPile, passTurn, dismissFortuneReading, dismissEventBlocked, dismissDrawDeclaration } from '@/engine/actions';
 import { getLegalActions } from '@/engine/validation';
 import type { GameState } from '@/engine/state';
 import type { EventTarget } from '@/engine/events';
@@ -91,6 +91,11 @@ export function useGameState() {
     setState(dismissEventBlocked(state));
   }, [state]);
 
+  const handleDismissDrawDeclaration = useCallback(() => {
+    if (!state) return;
+    setState(dismissDrawDeclaration(state));
+  }, [state]);
+
   // When pass-turn countdown is active, tick every second and advance turn at 0.
   useEffect(() => {
     if (passTurnCountdown === null || passTurnCountdown <= 0) return;
@@ -122,5 +127,6 @@ export function useGameState() {
     handleSummonFromPile,
     handleDismissFortuneReading,
     handleDismissEventBlocked,
+    handleDismissDrawDeclaration,
   };
 }

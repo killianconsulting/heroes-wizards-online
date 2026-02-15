@@ -13,6 +13,7 @@ import {
   passTurn,
   dismissFortuneReading,
   dismissEventBlocked,
+  dismissDrawDeclaration,
 } from '@/engine/actions';
 
 export type GameAction =
@@ -24,7 +25,8 @@ export type GameAction =
   | { type: 'dumpCard'; cardId: number }
   | { type: 'summonFromPile'; cardId: number }
   | { type: 'dismissFortuneReading' }
-  | { type: 'dismissEventBlocked' };
+  | { type: 'dismissEventBlocked' }
+  | { type: 'dismissDrawDeclaration' };
 
 export interface GameStartPayload {
   state: GameState;
@@ -281,6 +283,8 @@ export function applyAction(state: GameState, action: GameAction): GameState {
       return dismissFortuneReading(state);
     case 'dismissEventBlocked':
       return dismissEventBlocked(state);
+    case 'dismissDrawDeclaration':
+      return dismissDrawDeclaration(state);
     default:
       return state;
   }

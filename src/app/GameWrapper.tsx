@@ -102,6 +102,10 @@ export default function GameWrapper() {
       if (online.isHost) online.applyActionAndBroadcast({ type: 'dismissEventBlocked' });
       else online.sendAction({ type: 'dismissEventBlocked' });
     };
+    const onDismissDrawDeclaration = () => {
+      if (online.isHost) online.applyActionAndBroadcast({ type: 'dismissDrawDeclaration' });
+      else online.sendAction({ type: 'dismissDrawDeclaration' });
+    };
 
     return (
       <>
@@ -119,6 +123,7 @@ export default function GameWrapper() {
           onSummonFromPile={onSummonFromPile}
           onDismissFortuneReading={onDismissFortuneReading}
           onDismissEventBlocked={onDismissEventBlocked}
+          onDismissDrawDeclaration={onDismissDrawDeclaration}
           onLeaveGame={handleLeaveGame}
           myPlayerIndex={online.myPlayerIndex}
         />
@@ -140,6 +145,7 @@ export default function GameWrapper() {
       onSummonFromPile={local.handleSummonFromPile}
       onDismissFortuneReading={local.handleDismissFortuneReading}
       onDismissEventBlocked={local.handleDismissEventBlocked}
+      onDismissDrawDeclaration={local.handleDismissDrawDeclaration}
       onLeaveGame={handleLeaveGame}
     />
   );

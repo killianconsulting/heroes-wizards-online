@@ -19,6 +19,7 @@ import CardZoomModal from './CardZoomModal';
 import FortuneReadingModal from './FortuneReadingModal';
 import EventBlockedNotification from './EventBlockedNotification';
 import PlayCardDeclarationModal from './PlayCardDeclarationModal';
+import DrawDeclarationModal from './DrawDeclarationModal';
 import GameLogo from './GameLogo';
 import Card from './Card';
 
@@ -34,6 +35,7 @@ interface GameScreenProps {
   onSummonFromPile: (cardId: number) => void;
   onDismissFortuneReading: () => void;
   onDismissEventBlocked: () => void;
+  onDismissDrawDeclaration?: () => void;
   onLeaveGame: () => void;
   /** Online mode: this client's player index; only show this hand and enable actions when it's this player's turn. */
   myPlayerIndex?: number;
@@ -111,6 +113,7 @@ export default function GameScreen({
   onSummonFromPile,
   onDismissFortuneReading,
   onDismissEventBlocked,
+  onDismissDrawDeclaration,
   onLeaveGame,
   myPlayerIndex,
   onDeclarePlay,
@@ -246,6 +249,12 @@ export default function GameScreen({
         <EventBlockedNotification
           message={state.eventBlocked.message}
           onDismiss={onDismissEventBlocked}
+        />
+      )}
+      {state.pendingDrawDeclaration !== undefined && (myPlayerIndex === undefined || myPlayerIndex !== state.pendingDrawDeclaration) && (
+        <DrawDeclarationModal
+          playerName={state.players[state.pendingDrawDeclaration]?.name ?? 'A player'}
+          onDismiss={() => onDismissDrawDeclaration?.()}
         />
       )}
       {useDeclarationFlow && showDeclarationModalToWaiting && pendingDecl && (

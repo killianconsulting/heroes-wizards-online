@@ -1575,6 +1575,75 @@ body {
   filter: brightness(1.15);
 }
 
+/* ----- Draw card declaration (simple bar: message + countdown + OK) ----- */
+.draw-declaration {
+  position: fixed;
+  inset: 0;
+  z-index: 108;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.draw-declaration__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+}
+
+.draw-declaration__content {
+  position: relative;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.25rem;
+  background: linear-gradient(135deg, #2d1f0f 0%, #1a1208 100%);
+  border: 2px solid var(--accent-quest);
+  border-radius: 0.75rem;
+  padding: 1rem 1.25rem;
+  max-width: min(28rem, 95vw);
+  box-shadow: 0 0 1rem rgba(180, 120, 60, 0.3);
+}
+
+.draw-declaration__message {
+  font-size: 1rem;
+  color: var(--text);
+  margin: 0;
+  flex: 1;
+}
+
+.draw-declaration__actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-shrink: 0;
+}
+
+.draw-declaration__countdown {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--accent-quest);
+  min-width: 1.5rem;
+  text-align: center;
+}
+
+.draw-declaration__ok {
+  padding: 0.5rem 1.25rem;
+  font-size: 1rem;
+  font-weight: 600;
+  background: var(--accent-quest);
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  cursor: pointer;
+}
+
+.draw-declaration__ok:hover {
+  filter: brightness(1.15);
+}
+
 /* ----- Online status notification (low-key) ----- */
 .online-status {
   position: fixed;

@@ -57,7 +57,16 @@ export function drawCard(state: GameState): GameState {
     players,
     drewThisTurn: true,
     actedThisTurn: true,
+    pendingDrawDeclaration: currentIndex,
   };
+}
+
+/**
+ * Dismiss the "X drew a card" declaration (clears pendingDrawDeclaration).
+ */
+export function dismissDrawDeclaration(state: GameState): GameState {
+  if (!state.pendingDrawDeclaration) return state;
+  return { ...state, pendingDrawDeclaration: undefined };
 }
 
 /**

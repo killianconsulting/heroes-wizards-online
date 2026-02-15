@@ -64,4 +64,6 @@ export interface GameState {
     playerIndex: number;
     target?: { playerIndex?: number; cardId?: CardId };
   };
+  /** Player index who just drew; show "X drew a card" to other players until dismissed. */
+  pendingDrawDeclaration?: number;
 }

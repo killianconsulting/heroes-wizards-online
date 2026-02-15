@@ -107,6 +107,7 @@ export function OnlineGameProvider({ children }: { children: ReactNode }) {
   const gameChannelRef = useRef<{ send: (args: object) => Promise<unknown>; track?: (payload: Record<string, unknown>) => void } | null>(null);
   const isGameHostRef = useRef(false);
   const declarationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const drawDeclarationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const startOnlineGameAsHost = useCallback(
     (state: GameState, order: string[]) => {
@@ -129,6 +130,10 @@ export function OnlineGameProvider({ children }: { children: ReactNode }) {
     if (declarationTimerRef.current) {
       clearTimeout(declarationTimerRef.current);
       declarationTimerRef.current = null;
+    }
+    if (drawDeclarationTimerRef.current) {
+      clearTimeout(drawDeclarationTimerRef.current);
+      drawDeclarationTimerRef.current = null;
     }
     setStatusMessage(null);
     setGameState(null);
@@ -155,6 +160,10 @@ export function OnlineGameProvider({ children }: { children: ReactNode }) {
         clearTimeout(declarationTimerRef.current);
         declarationTimerRef.current = null;
       }
+      if (drawDeclarationTimerRef.current) {
+        clearTimeout(drawDeclarationTimerRef.current);
+        drawDeclarationTimerRef.current = null;
+      }
       const next = applyAction(gameState, action);
       setGameState(next);
       await broadcastGameState(lobbyId, next, gameChannelRef.current, playerOrder);
@@ -166,6 +175,16 @@ export function OnlineGameProvider({ children }: { children: ReactNode }) {
           const afterConfirm = applyAction(stateNow, { type: 'confirmDeclaration' });
           setGameState(afterConfirm);
           broadcastGameState(lobbyId, afterConfirm, gameChannelRef.current, playerOrderRef.current);
+        }, 3000);
+      }
+      if (action.type === 'draw') {
+        drawDeclarationTimerRef.current = setTimeout(() => {
+          drawDeclarationTimerRef.current = null;
+          const stateNow = gameStateRef.current;
+          if (stateNow?.pendingDrawDeclaration === undefined) return;
+          const afterDismiss = applyAction(stateNow, { type: 'dismissDrawDeclaration' });
+          setGameState(afterDismiss);
+          broadcastGameState(lobbyId, afterDismiss, gameChannelRef.current, playerOrderRef.current);
         }, 3000);
       }
     },
@@ -253,6 +272,20 @@ export function OnlineGameProvider({ children }: { children: ReactNode }) {
         const next = applyAction(current, action);
         setGameState(next);
         broadcastGameState(lobbyId, next, gameChannelRef.current, playerOrderRef.current);
+        if (action.type === 'draw' && next.pendingDrawDeclaration !== undefined) {
+          if (drawDeclarationTimerRef.current) {
+            clearTimeout(drawDeclarationTimerRef.current);
+            drawDeclarationTimerRef.current = null;
+          }
+          drawDeclarationTimerRef.current = setTimeout(() => {
+            drawDeclarationTimerRef.current = null;
+            const stateNow = gameStateRef.current;
+            if (stateNow?.pendingDrawDeclaration === undefined) return;
+            const afterDismiss = applyAction(stateNow, { type: 'dismissDrawDeclaration' });
+            setGameState(afterDismiss);
+            broadcastGameState(lobbyId, afterDismiss, gameChannelRef.current, playerOrderRef.current);
+          }, 3000);
+        }
       },
       onPlayerLeft: (payload) => {
         const current = gameStateRef.current;

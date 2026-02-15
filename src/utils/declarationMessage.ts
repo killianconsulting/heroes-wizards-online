@@ -4,7 +4,7 @@
  */
 
 import { getCard } from '@/data/cards';
-import { isHeroCard, isWizardCard, isEventCard, isQuestCard } from '@/data/types';
+import { isHeroCard, isWizardCard, isEventCard, isQuestCard, type Card } from '@/data/types';
 import type { HeroType } from '@/data/constants';
 import type { GameState } from '@/engine/state';
 import type { EventTarget } from '@/engine/events';
@@ -94,5 +94,5 @@ export function getDeclarationMessage(
     return `${playerName} is playing ${card.name}: ${card.effect}`;
   }
 
-  return `${playerName} is playing ${card.name}.`;
+  return `${playerName} is playing ${(card as Card).name}.`;
 }
