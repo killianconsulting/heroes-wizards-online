@@ -136,7 +136,15 @@ export default function GameScreen({
   );
   /** When Summoner picks from event pile: card selected for confirmation (zoom + "Take this card"). */
   const [pendingSummonCardId, setPendingSummonCardId] = useState<number | null>(null);
+  /** Optimistic dismiss: hide draw modal as soon as user clicks OK or countdown ends, so game doesn't stay stuck if host broadcast is delayed. */
+  const [drawDeclarationDismissed, setDrawDeclarationDismissed] = useState(false);
   const { requestLeaveGame } = useLeaveGame();
+
+  useEffect(() => {
+    if (state.pendingDrawDeclaration === undefined) {
+      setDrawDeclarationDismissed(false);
+    }
+  }, [state.pendingDrawDeclaration]);
 
   const currentIndex = state.currentPlayerIndex;
   const currentPlayer = state.players[currentIndex];
@@ -270,10 +278,15 @@ export default function GameScreen({
           onDismiss={onDismissEventBlocked}
         />
       )}
-      {state.pendingDrawDeclaration !== undefined && (myPlayerIndex === undefined || myPlayerIndex !== state.pendingDrawDeclaration) && (
+      {state.pendingDrawDeclaration !== undefined &&
+        !drawDeclarationDismissed &&
+        (myPlayerIndex === undefined || myPlayerIndex !== state.pendingDrawDeclaration) && (
         <DrawDeclarationModal
           playerName={state.players[state.pendingDrawDeclaration]?.name ?? 'A player'}
-          onDismiss={() => onDismissDrawDeclaration?.()}
+          onDismiss={() => {
+            setDrawDeclarationDismissed(true);
+            onDismissDrawDeclaration?.();
+          }}
         />
       )}
       {state.pendingPlayDeclarationDisplay && (myPlayerIndex === undefined || myPlayerIndex !== state.pendingPlayDeclarationDisplay.playerIndex) && (
