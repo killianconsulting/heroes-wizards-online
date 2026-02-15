@@ -14,7 +14,7 @@ import EventPile from './EventPile';
 import PartyDisplay from './Party';
 import Hand from './Hand';
 import ActionBar from './ActionBar';
-import TargetSelector from './TargetSelector';
+import TargetSelectorModal from './TargetSelectorModal';
 import CardZoomModal from './CardZoomModal';
 import FortuneReadingModal from './FortuneReadingModal';
 import HuntingCardPickModal from './HuntingCardPickModal';
@@ -113,7 +113,7 @@ export default function GameScreen({
   }, [state.pendingDrawDeclaration]);
 
   useEffect(() => {
-    if (state.pendingDumpDeclaration === undefined) {
+    if (!state.pendingDumpDeclaration) {
       setDumpDeclarationDismissed(false);
     }
   }, [state.pendingDumpDeclaration]);
@@ -255,7 +255,8 @@ export default function GameScreen({
           }
         />
       )}
-      {state.pendingFortuneReading && (
+      {state.pendingFortuneReading &&
+        (myPlayerIndex === undefined || myPlayerIndex === state.currentPlayerIndex) && (
         <FortuneReadingModal
           state={state}
           onDismiss={onDismissFortuneReading}
@@ -278,11 +279,12 @@ export default function GameScreen({
           }}
         />
       )}
-      {state.pendingDumpDeclaration !== undefined &&
+      {state.pendingDumpDeclaration &&
         !dumpDeclarationDismissed &&
-        (myPlayerIndex === undefined || myPlayerIndex !== state.pendingDumpDeclaration) && (
+        (myPlayerIndex === undefined || myPlayerIndex !== state.pendingDumpDeclaration.playerIndex) && (
         <DumpDeclarationModal
-          playerName={state.players[state.pendingDumpDeclaration]?.name ?? 'A player'}
+          playerName={state.players[state.pendingDumpDeclaration.playerIndex]?.name ?? 'A player'}
+          cardId={state.pendingDumpDeclaration.cardId}
           onDismiss={() => {
             setDumpDeclarationDismissed(true);
             onDismissDumpDeclaration?.();
@@ -335,48 +337,49 @@ export default function GameScreen({
           }
         />
       )}
-      <header className="game-header">
-        <button
-          type="button"
-          className="game-header__logo-btn"
-          onClick={requestLeaveGame}
-          aria-label="Leave game"
-        >
-          <div className="game-header__title">
-            <GameLogo maxHeight={48} />
-          </div>
-        </button>
-        <h2 className="game-turn">
-          {currentPlayer.name}&apos;s Turn
-          {state.stargazerSecondPlayUsed && ' (second play)'}
-        </h2>
-      </header>
-
-      {pendingEvent ? (
-        <section className="game-target">
-          <TargetSelector
-            state={state}
-            eventCardId={pendingEvent.cardId}
-            eventId={pendingEvent.eventId}
-            onSelect={handleTargetSelected}
-            onCancel={handleTargetCancel}
-            onPlayerChosenForDeclaration={
-              pendingEvent.eventId === 'hunting_expedition' && useDeclarationFlow
-                ? handleHuntingPlayerChosen
-                : undefined
-            }
-          />
-        </section>
-      ) : passTurnCountdown !== null ? (
-        <div className="game-pass-turn-overlay" role="status" aria-live="polite">
-          <p className="game-pass-turn-overlay__text">Pass the device to the next player</p>
-          <p className="game-pass-turn-overlay__countdown" aria-label={`${passTurnCountdown} seconds remaining`}>
-            {passTurnCountdown}
-          </p>
-        </div>
-      ) : (
+      {pendingEvent && (
+        <TargetSelectorModal
+          state={state}
+          eventCardId={pendingEvent.cardId}
+          eventId={pendingEvent.eventId}
+          onSelect={handleTargetSelected}
+          onCancel={handleTargetCancel}
+          onPlayerChosenForDeclaration={
+            pendingEvent.eventId === 'hunting_expedition' && useDeclarationFlow
+              ? handleHuntingPlayerChosen
+              : undefined
+          }
+        />
+      )}
+      {!pendingEvent && (
         <>
-          <section className="game-table">
+          <header className="game-header">
+            <button
+              type="button"
+              className="game-header__logo-btn"
+              onClick={requestLeaveGame}
+              aria-label="Leave game"
+            >
+              <div className="game-header__title">
+                <GameLogo maxHeight={48} />
+              </div>
+            </button>
+            <h2 className="game-turn">
+              {currentPlayer.name}&apos;s Turn
+              {state.stargazerSecondPlayUsed && ' (second play)'}
+            </h2>
+          </header>
+
+          {passTurnCountdown !== null ? (
+            <div className="game-pass-turn-overlay" role="status" aria-live="polite">
+              <p className="game-pass-turn-overlay__text">Pass the device to the next player</p>
+              <p className="game-pass-turn-overlay__countdown" aria-label={`${passTurnCountdown} seconds remaining`}>
+                {passTurnCountdown}
+              </p>
+            </div>
+          ) : (
+            <>
+              <section className="game-table">
             {/* Local: current player at bottom. Online: my seat (displayIndex) at bottom. */}
             <div className="game-table__table">
               {/* Top: players opposite the bottom seat */}
@@ -506,6 +509,8 @@ export default function GameScreen({
               onlyPassAvailable={state.actedThisTurn}
             />
           </section>
+            </>
+          )}
         </>
       )}
     </main>

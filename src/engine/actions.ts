@@ -310,7 +310,7 @@ export function dumpCard(state: GameState, cardId: CardId): GameState {
     players,
     eventPile,
     actedThisTurn: true,
-    pendingDumpDeclaration: currentIndex,
+    pendingDumpDeclaration: { playerIndex: currentIndex, cardId },
   };
 }
 
@@ -318,7 +318,7 @@ export function dumpCard(state: GameState, cardId: CardId): GameState {
  * Dismiss the "X dumped a card" declaration (clears pendingDumpDeclaration).
  */
 export function dismissDumpDeclaration(state: GameState): GameState {
-  if (state.pendingDumpDeclaration === undefined) return state;
+  if (!state.pendingDumpDeclaration) return state;
   return { ...state, pendingDumpDeclaration: undefined };
 }
 

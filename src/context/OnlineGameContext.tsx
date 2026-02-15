@@ -240,7 +240,7 @@ export function OnlineGameProvider({ children }: { children: ReactNode }) {
         dumpDeclarationTimerRef.current = setTimeout(() => {
           dumpDeclarationTimerRef.current = null;
           const stateNow = gameStateRef.current;
-          if (stateNow?.pendingDumpDeclaration === undefined) return;
+          if (!stateNow?.pendingDumpDeclaration) return;
           const afterDismiss = applyAction(stateNow, { type: 'dismissDumpDeclaration' });
           setGameState(afterDismiss);
           broadcastGameState(lobbyId, afterDismiss, gameChannelRef.current, playerOrderRef.current);
@@ -386,7 +386,7 @@ export function OnlineGameProvider({ children }: { children: ReactNode }) {
             broadcastGameState(lobbyId, afterDismiss, gameChannelRef.current, playerOrderRef.current);
           }, 3000);
         }
-        if (action.type === 'dumpCard' && next.pendingDumpDeclaration !== undefined) {
+        if (action.type === 'dumpCard' && next.pendingDumpDeclaration) {
           if (dumpDeclarationTimerRef.current) {
             clearTimeout(dumpDeclarationTimerRef.current);
             dumpDeclarationTimerRef.current = null;
@@ -394,7 +394,7 @@ export function OnlineGameProvider({ children }: { children: ReactNode }) {
           dumpDeclarationTimerRef.current = setTimeout(() => {
             dumpDeclarationTimerRef.current = null;
             const stateNow = gameStateRef.current;
-            if (stateNow?.pendingDumpDeclaration === undefined) return;
+            if (!stateNow?.pendingDumpDeclaration) return;
             const afterDismiss = applyAction(stateNow, { type: 'dismissDumpDeclaration' });
             setGameState(afterDismiss);
             broadcastGameState(lobbyId, afterDismiss, gameChannelRef.current, playerOrderRef.current);

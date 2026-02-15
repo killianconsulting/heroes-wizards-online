@@ -68,8 +68,8 @@ export interface GameState {
   };
   /** Player index who just drew; show "X drew a card" to other players until dismissed. */
   pendingDrawDeclaration?: number;
-  /** Player index who just dumped; show "X dumped a card" to other players until dismissed. */
-  pendingDumpDeclaration?: number;
+  /** Player index and card who just dumped; show "X dumped [card]" to other players until dismissed. */
+  pendingDumpDeclaration?: { playerIndex: number; cardId: number };
   /** Player index who just used Summoner; show "X used the Summoner to take a card from the Event Pile" until dismissed. */
   pendingSummonDeclaration?: number;
   /** Play already applied (hero/wizard); show declaration to other players only until dismissed. */

@@ -1666,28 +1666,61 @@ body {
   display: flex;
   flex-direction: row;
   align-items: center;
-  justify-content: space-between;
   gap: 1.25rem;
   background: linear-gradient(135deg, #2d1f0f 0%, #1a1208 100%);
   border: 2px solid var(--accent-quest);
   border-radius: 0.75rem;
-  padding: 1rem 1.25rem;
-  max-width: min(28rem, 95vw);
+  padding: 1.25rem;
+  max-width: min(36rem, 95vw);
   box-shadow: 0 0 1rem rgba(180, 120, 60, 0.3);
+}
+
+.dump-declaration__card {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dump-declaration__card-inner {
+  width: 100px;
+  height: auto;
+}
+
+.dump-declaration__card-inner .card__img {
+  width: 100px;
+  height: auto;
+  max-height: 140px;
+  object-fit: contain;
+}
+
+.dump-declaration__card-inner .card__placeholder {
+  width: 100px;
+  min-height: 140px;
+  padding: 0.5rem;
+}
+
+.dump-declaration__body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-width: 0;
 }
 
 .dump-declaration__message {
   font-size: 1rem;
   color: var(--text);
   margin: 0;
-  flex: 1;
+  line-height: 1.45;
 }
 
 .dump-declaration__actions {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 1rem;
-  flex-shrink: 0;
+  margin-top: 1rem;
 }
 
 .dump-declaration__countdown {
@@ -1959,6 +1992,42 @@ body {
 .hunting-card-pick__ok:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+/* ----- Target selector modal (choose player/card) ----- */
+.target-selector-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 108;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.target-selector-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+}
+
+.target-selector-modal__content {
+  position: relative;
+  background: linear-gradient(135deg, #2d1f0f 0%, #1a1208 100%);
+  color: var(--text);
+  border: 2px solid var(--accent-event);
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  max-width: min(32rem, 95vw);
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 0 1.5rem rgba(180, 120, 60, 0.35);
+}
+
+.target-selector-modal__content .target-selector {
+  background: none;
+  padding: 0;
+  margin: 0;
 }
 
 /* ----- Online status notification (low-key) ----- */
