@@ -9,12 +9,11 @@ on:
     branches: [main]
   workflow_dispatch:
 
-env:
-  PUBLIC_REPO: ${{ vars.PUBLIC_REPO }}
-
 jobs:
   sync:
     runs-on: ubuntu-latest
+    env:
+      PUBLIC_REPO: ${{ vars.PUBLIC_REPO }}
     steps:
       - name: Checkout private repo
         uses: actions/checkout@v4
