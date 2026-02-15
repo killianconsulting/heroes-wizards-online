@@ -30,11 +30,15 @@ jobs:
 
       - name: Remove artwork from public/images (keep README)
         run: |
-          find public/images -type f ! -name 'README.md' -delete 2>/dev/null || true
+          if [ -d public/images ]; then
+            find public/images -type f ! -name 'README.md' -delete
+          fi
 
       - name: Remove artwork from public/cards (keep README)
         run: |
-          find public/cards -type f ! -name 'README.md' -delete 2>/dev/null || true
+          if [ -d public/cards ]; then
+            find public/cards -type f ! -name 'README.md' -delete
+          fi
 
       - name: Commit stripped tree and push to public
         env:
@@ -42,6 +46,12 @@ jobs:
         run: |
           if [ -z "$TOKEN" ]; then
             echo "::error::Add the secret PUBLIC_REPO_TOKEN in repo Settings → Secrets and variables → Actions."
+            exit 1
+          fi
+          # Strip newlines/spaces so pasted token always works
+          TOKEN="$(printf '%s' "$TOKEN" | tr -d '\n\r' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+          if [ -z "$TOKEN" ]; then
+            echo "::error::PUBLIC_REPO_TOKEN is empty after trimming. Update the secret with a valid token (no extra spaces or newlines)."
             exit 1
           fi
           git config user.name "github-actions[bot]"
@@ -52,5 +62,6 @@ jobs:
             exit 0
           fi
           git commit -m "chore: sync from private (artwork stripped for public repo)"
-          git remote add public "https://x-access-token:${TOKEN}@github.com/${PUBLIC_REPO}.git" 2>/dev/null || git remote set-url public "https://x-access-token:${TOKEN}@github.com/${PUBLIC_REPO}.git"
-          git push public HEAD:main --force
+          git remote add public "https://x-access-token:${TOKEN}@github.com/${PUBLIC_REPO}.git" || git remote set-url public "https://x-access-token:${TOKEN}@github.com/${PUBLIC_REPO}.git"
+          echo "Pushing to https://github.com/${PUBLIC_REPO}.git (main)..."
+          git push public HEAD:main --force 2>&1 || { echo "::error::Push failed. Check: PUBLIC_REPO is correct, token has push access to that repo, and the repo exists."; exit 1; }
