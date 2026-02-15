@@ -8,6 +8,9 @@ import {
   playCard,
   declarePlay,
   confirmDeclaration,
+  playCardWithDeclarationDisplay,
+  playCardWithDeclarationDisplayForEvent,
+  dismissPlayDeclarationDisplay,
   dumpCard,
   summonFromEventPile,
   passTurn,
@@ -22,6 +25,9 @@ export type GameAction =
   | { type: 'playCard'; cardId: number; target?: EventTarget }
   | { type: 'declarePlay'; cardId: number; target?: EventTarget }
   | { type: 'confirmDeclaration'; fullTarget?: EventTarget }
+  | { type: 'playCardWithDeclarationDisplay'; cardId: number }
+  | { type: 'playCardWithDeclarationDisplayForEvent'; cardId: number; target: EventTarget }
+  | { type: 'dismissPlayDeclarationDisplay' }
   | { type: 'dumpCard'; cardId: number }
   | { type: 'summonFromPile'; cardId: number }
   | { type: 'dismissFortuneReading' }
@@ -275,6 +281,12 @@ export function applyAction(state: GameState, action: GameAction): GameState {
       return declarePlay(state, action.cardId, action.target);
     case 'confirmDeclaration':
       return confirmDeclaration(state, action.fullTarget);
+    case 'playCardWithDeclarationDisplay':
+      return playCardWithDeclarationDisplay(state, action.cardId);
+    case 'playCardWithDeclarationDisplayForEvent':
+      return playCardWithDeclarationDisplayForEvent(state, action.cardId, action.target);
+    case 'dismissPlayDeclarationDisplay':
+      return dismissPlayDeclarationDisplay(state);
     case 'dumpCard':
       return dumpCard(state, action.cardId);
     case 'summonFromPile':

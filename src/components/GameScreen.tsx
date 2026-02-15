@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import { getCard } from '@/data/cards';
-import { isEventCard } from '@/data/types';
+import { isEventCard, isHeroCard, isWizardCard } from '@/data/types';
 import type { GameState } from '@/engine/state';
 import type { EventTarget } from '@/engine/events';
 import type { EventId } from '@/data/constants';
@@ -42,6 +42,11 @@ interface GameScreenProps {
   /** When provided, card plays go through declaration modal first (declarePlay → modal → confirmDeclaration). */
   onDeclarePlay?: (cardId: number, target?: EventTarget) => void;
   onConfirmDeclaration?: (fullTarget?: EventTarget) => void;
+  /** Hero/wizard: play immediately and show declaration to others only (no delay for active player). */
+  onPlayCardWithDeclarationDisplay?: (cardId: number) => void;
+  /** Event with target (e.g. steal): play immediately and show declaration to others only. */
+  onPlayCardWithDeclarationDisplayForEvent?: (cardId: number, target: EventTarget) => void;
+  onDismissPlayDeclarationDisplay?: () => void;
 }
 
 
@@ -118,6 +123,9 @@ export default function GameScreen({
   myPlayerIndex,
   onDeclarePlay,
   onConfirmDeclaration,
+  onPlayCardWithDeclarationDisplay,
+  onPlayCardWithDeclarationDisplayForEvent,
+  onDismissPlayDeclarationDisplay,
 }: GameScreenProps) {
   const [selectedCardId, setSelectedCardId] = useState<number | null>(null);
   const [pendingEvent, setPendingEvent] = useState<{ cardId: number; eventId: EventId } | null>(
@@ -174,6 +182,11 @@ export default function GameScreen({
       setPendingEvent({ cardId: selectedCardId, eventId: card.eventId });
       return;
     }
+    if (useDeclarationFlow && (isHeroCard(card) || isWizardCard(card)) && onPlayCardWithDeclarationDisplay) {
+      onPlayCardWithDeclarationDisplay(selectedCardId);
+      setSelectedCardId(null);
+      return;
+    }
     if (useDeclarationFlow && onDeclarePlay) {
       onDeclarePlay(selectedCardId);
       setSelectedCardId(null);
@@ -181,11 +194,17 @@ export default function GameScreen({
       onPlayCard(selectedCardId);
       setSelectedCardId(null);
     }
-  }, [selectedCardId, effectiveLegal.playableCardIds, useDeclarationFlow, onDeclarePlay, onPlayCard]);
+  }, [selectedCardId, effectiveLegal.playableCardIds, useDeclarationFlow, onPlayCardWithDeclarationDisplay, onDeclarePlay, onPlayCard]);
 
   const handleTargetSelected = useCallback(
     (target: EventTarget) => {
       if (!pendingEvent) return;
+      if (useDeclarationFlow && onPlayCardWithDeclarationDisplayForEvent) {
+        onPlayCardWithDeclarationDisplayForEvent(pendingEvent.cardId, target);
+        setPendingEvent(null);
+        setSelectedCardId(null);
+        return;
+      }
       if (useDeclarationFlow && onDeclarePlay) {
         onDeclarePlay(pendingEvent.cardId, target);
         setPendingEvent(null);
@@ -196,7 +215,7 @@ export default function GameScreen({
         setSelectedCardId(null);
       }
     },
-    [pendingEvent, useDeclarationFlow, onDeclarePlay, onPlayCard]
+    [pendingEvent, useDeclarationFlow, onPlayCardWithDeclarationDisplayForEvent, onDeclarePlay, onPlayCard]
   );
 
   const handleHuntingPlayerChosen = useCallback(
@@ -257,6 +276,14 @@ export default function GameScreen({
           onDismiss={() => onDismissDrawDeclaration?.()}
         />
       )}
+      {state.pendingPlayDeclarationDisplay && (myPlayerIndex === undefined || myPlayerIndex !== state.pendingPlayDeclarationDisplay.playerIndex) && (
+        <PlayCardDeclarationModal
+          cardId={state.pendingPlayDeclarationDisplay.cardId}
+          message={state.pendingPlayDeclarationDisplay.message}
+          onDismiss={() => onDismissPlayDeclarationDisplay?.()}
+          noAutoDismiss={false}
+        />
+      )}
       {useDeclarationFlow && showDeclarationModalToWaiting && pendingDecl && (
         <PlayCardDeclarationModal
           cardId={pendingDecl.cardId}
@@ -276,7 +303,12 @@ export default function GameScreen({
             state={state}
             targetPlayerIndex={pendingDecl.target.playerIndex}
             onConfirm={(cardId) =>
-              onConfirmDeclaration?.({ playerIndex: pendingDecl.target!.playerIndex, cardId })
+              onPlayCardWithDeclarationDisplayForEvent
+                ? onPlayCardWithDeclarationDisplayForEvent(pendingDecl.cardId, {
+                    playerIndex: pendingDecl.target!.playerIndex,
+                    cardId,
+                  })
+                : onConfirmDeclaration?.({ playerIndex: pendingDecl.target!.playerIndex, cardId })
             }
           />
         </section>

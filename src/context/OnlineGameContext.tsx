@@ -108,6 +108,7 @@ export function OnlineGameProvider({ children }: { children: ReactNode }) {
   const isGameHostRef = useRef(false);
   const declarationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const drawDeclarationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const playDeclarationDisplayTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const startOnlineGameAsHost = useCallback(
     (state: GameState, order: string[]) => {
@@ -134,6 +135,10 @@ export function OnlineGameProvider({ children }: { children: ReactNode }) {
     if (drawDeclarationTimerRef.current) {
       clearTimeout(drawDeclarationTimerRef.current);
       drawDeclarationTimerRef.current = null;
+    }
+    if (playDeclarationDisplayTimerRef.current) {
+      clearTimeout(playDeclarationDisplayTimerRef.current);
+      playDeclarationDisplayTimerRef.current = null;
     }
     setStatusMessage(null);
     setGameState(null);
@@ -164,9 +169,26 @@ export function OnlineGameProvider({ children }: { children: ReactNode }) {
         clearTimeout(drawDeclarationTimerRef.current);
         drawDeclarationTimerRef.current = null;
       }
+      if (playDeclarationDisplayTimerRef.current) {
+        clearTimeout(playDeclarationDisplayTimerRef.current);
+        playDeclarationDisplayTimerRef.current = null;
+      }
       const next = applyAction(gameState, action);
       setGameState(next);
       await broadcastGameState(lobbyId, next, gameChannelRef.current, playerOrder);
+      if (
+        (action.type === 'playCardWithDeclarationDisplay' || action.type === 'playCardWithDeclarationDisplayForEvent') &&
+        next.pendingPlayDeclarationDisplay
+      ) {
+        playDeclarationDisplayTimerRef.current = setTimeout(() => {
+          playDeclarationDisplayTimerRef.current = null;
+          const stateNow = gameStateRef.current;
+          if (!stateNow?.pendingPlayDeclarationDisplay) return;
+          const afterDismiss = applyAction(stateNow, { type: 'dismissPlayDeclarationDisplay' });
+          setGameState(afterDismiss);
+          broadcastGameState(lobbyId, afterDismiss, gameChannelRef.current, playerOrderRef.current);
+        }, 3000);
+      }
       if (action.type === 'declarePlay' && !isDeclarationAwaitingCardChoice(next)) {
         declarationTimerRef.current = setTimeout(() => {
           declarationTimerRef.current = null;
@@ -237,8 +259,29 @@ export function OnlineGameProvider({ children }: { children: ReactNode }) {
       onAction: (payload) => {
         if (!isGameHostRef.current) return;
         const current = gameStateRef.current;
-        if (!current || payload.fromPlayerIndex !== current.currentPlayerIndex) return;
+        if (!current) return;
         const action = payload.action as import('@/lib/gameSync').GameAction;
+        // Dismiss actions can be sent by any player (e.g. Quinn dismisses "Rascal drew a card" modal)
+        if (
+          action.type === 'dismissDrawDeclaration' ||
+          action.type === 'dismissFortuneReading' ||
+          action.type === 'dismissEventBlocked' ||
+          action.type === 'dismissPlayDeclarationDisplay'
+        ) {
+          const next = applyAction(current, action);
+          setGameState(next);
+          broadcastGameState(lobbyId, next, gameChannelRef.current, playerOrderRef.current);
+          if (action.type === 'dismissDrawDeclaration' && drawDeclarationTimerRef.current) {
+            clearTimeout(drawDeclarationTimerRef.current);
+            drawDeclarationTimerRef.current = null;
+          }
+          if (action.type === 'dismissPlayDeclarationDisplay' && playDeclarationDisplayTimerRef.current) {
+            clearTimeout(playDeclarationDisplayTimerRef.current);
+            playDeclarationDisplayTimerRef.current = null;
+          }
+          return;
+        }
+        if (payload.fromPlayerIndex !== current.currentPlayerIndex) return;
         if (action.type === 'declarePlay') {
           if (declarationTimerRef.current) {
             clearTimeout(declarationTimerRef.current);
@@ -282,6 +325,23 @@ export function OnlineGameProvider({ children }: { children: ReactNode }) {
             const stateNow = gameStateRef.current;
             if (stateNow?.pendingDrawDeclaration === undefined) return;
             const afterDismiss = applyAction(stateNow, { type: 'dismissDrawDeclaration' });
+            setGameState(afterDismiss);
+            broadcastGameState(lobbyId, afterDismiss, gameChannelRef.current, playerOrderRef.current);
+          }, 3000);
+        }
+        if (
+          (action.type === 'playCardWithDeclarationDisplay' || action.type === 'playCardWithDeclarationDisplayForEvent') &&
+          next.pendingPlayDeclarationDisplay
+        ) {
+          if (playDeclarationDisplayTimerRef.current) {
+            clearTimeout(playDeclarationDisplayTimerRef.current);
+            playDeclarationDisplayTimerRef.current = null;
+          }
+          playDeclarationDisplayTimerRef.current = setTimeout(() => {
+            playDeclarationDisplayTimerRef.current = null;
+            const stateNow = gameStateRef.current;
+            if (!stateNow?.pendingPlayDeclarationDisplay) return;
+            const afterDismiss = applyAction(stateNow, { type: 'dismissPlayDeclarationDisplay' });
             setGameState(afterDismiss);
             broadcastGameState(lobbyId, afterDismiss, gameChannelRef.current, playerOrderRef.current);
           }, 3000);

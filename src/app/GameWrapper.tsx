@@ -106,6 +106,18 @@ export default function GameWrapper() {
       if (online.isHost) online.applyActionAndBroadcast({ type: 'dismissDrawDeclaration' });
       else online.sendAction({ type: 'dismissDrawDeclaration' });
     };
+    const onPlayCardWithDeclarationDisplay = (cardId: number) => {
+      if (online.isHost) online.applyActionAndBroadcast({ type: 'playCardWithDeclarationDisplay', cardId });
+      else online.sendAction({ type: 'playCardWithDeclarationDisplay', cardId });
+    };
+    const onPlayCardWithDeclarationDisplayForEvent = (cardId: number, target: import('@/engine/events').EventTarget) => {
+      if (online.isHost) online.applyActionAndBroadcast({ type: 'playCardWithDeclarationDisplayForEvent', cardId, target });
+      else online.sendAction({ type: 'playCardWithDeclarationDisplayForEvent', cardId, target });
+    };
+    const onDismissPlayDeclarationDisplay = () => {
+      if (online.isHost) online.applyActionAndBroadcast({ type: 'dismissPlayDeclarationDisplay' });
+      else online.sendAction({ type: 'dismissPlayDeclarationDisplay' });
+    };
 
     return (
       <>
@@ -124,6 +136,9 @@ export default function GameWrapper() {
           onDismissFortuneReading={onDismissFortuneReading}
           onDismissEventBlocked={onDismissEventBlocked}
           onDismissDrawDeclaration={onDismissDrawDeclaration}
+          onPlayCardWithDeclarationDisplay={onPlayCardWithDeclarationDisplay}
+          onPlayCardWithDeclarationDisplayForEvent={onPlayCardWithDeclarationDisplayForEvent}
+          onDismissPlayDeclarationDisplay={onDismissPlayDeclarationDisplay}
           onLeaveGame={handleLeaveGame}
           myPlayerIndex={online.myPlayerIndex}
         />
@@ -141,6 +156,9 @@ export default function GameWrapper() {
       onPlayCard={local.handlePlayCard}
       onDeclarePlay={local.handleDeclarePlay}
       onConfirmDeclaration={local.handleConfirmDeclaration}
+      onPlayCardWithDeclarationDisplay={local.handlePlayCardWithDeclarationDisplay}
+      onPlayCardWithDeclarationDisplayForEvent={local.handlePlayCardWithDeclarationDisplayForEvent}
+      onDismissPlayDeclarationDisplay={local.handleDismissPlayDeclarationDisplay}
       onDumpCard={local.handleDumpCard}
       onSummonFromPile={local.handleSummonFromPile}
       onDismissFortuneReading={local.handleDismissFortuneReading}

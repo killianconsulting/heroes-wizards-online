@@ -10,6 +10,7 @@ import type { GameState, Party } from './state';
 import type { CardId } from './state';
 import { canPlayQuest } from './validation';
 import { resolveEvent, advanceTurn, advanceTurnPastInactive, getActivePlayerIndices, type EventTarget } from './events';
+import { getDeclarationMessage } from '@/utils/declarationMessage';
 
 /** Party slot key for hero type (Knight -> knight, etc.) */
 const HERO_PARTY_KEY: Record<HeroType, keyof Party> = {
@@ -131,6 +132,53 @@ export function confirmDeclaration(
   const target = fullTarget !== undefined ? fullTarget : pending.target;
   const next = playCard(state, pending.cardId, target);
   return { ...next, pendingPlayDeclaration: undefined };
+}
+
+/**
+ * Play a hero or wizard card immediately and set pendingPlayDeclarationDisplay so other
+ * players see the declaration modal (no delay for the active player).
+ */
+export function playCardWithDeclarationDisplay(state: GameState, cardId: CardId): GameState {
+  const card = getCard(cardId);
+  if (!isHeroCard(card) && !isWizardCard(card)) return state;
+  const currentIndex = state.currentPlayerIndex;
+  const message = getDeclarationMessage(state, cardId, undefined, currentIndex);
+  const next = playCard(state, cardId);
+  if (next === state) return state;
+  return {
+    ...next,
+    pendingPlayDeclarationDisplay: { cardId, playerIndex: currentIndex, message },
+  };
+}
+
+/**
+ * Play an event card with target immediately (e.g. steal) and set pendingPlayDeclarationDisplay
+ * so other players see the declaration (no delay for the active player).
+ */
+export function playCardWithDeclarationDisplayForEvent(
+  state: GameState,
+  cardId: CardId,
+  target: EventTarget
+): GameState {
+  const card = getCard(cardId);
+  if (!isEventCard(card)) return state;
+  const currentIndex = state.currentPlayerIndex;
+  const message = getDeclarationMessage(state, cardId, target, currentIndex);
+  const next = playCard(state, cardId, target);
+  if (next === state) return state;
+  return {
+    ...next,
+    pendingPlayDeclaration: undefined,
+    pendingPlayDeclarationDisplay: { cardId, playerIndex: currentIndex, target, message },
+  };
+}
+
+/**
+ * Dismiss the display-only play declaration (hero/wizard/event already applied).
+ */
+export function dismissPlayDeclarationDisplay(state: GameState): GameState {
+  if (!state.pendingPlayDeclarationDisplay) return state;
+  return { ...state, pendingPlayDeclarationDisplay: undefined };
 }
 
 /**

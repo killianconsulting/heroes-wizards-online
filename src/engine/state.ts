@@ -66,4 +66,12 @@ export interface GameState {
   };
   /** Player index who just drew; show "X drew a card" to other players until dismissed. */
   pendingDrawDeclaration?: number;
+  /** Play already applied (hero/wizard); show declaration to other players only until dismissed. */
+  pendingPlayDeclarationDisplay?: {
+    cardId: CardId;
+    playerIndex: number;
+    target?: { playerIndex?: number; cardId?: CardId };
+    /** Message built before play so "swapping" vs "playing" is correct. */
+    message: string;
+  };
 }

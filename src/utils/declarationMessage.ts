@@ -25,6 +25,13 @@ const SLOT_LABEL: Record<string, string> = {
   wizard: 'Wizard',
 };
 
+const STARGAZER_SUFFIX = ' (2nd play this turn — Stargazer Wizard)';
+
+function withStargazerNote(message: string, state: GameState, idx: number): string {
+  if (!state.stargazerSecondPlayUsed || state.currentPlayerIndex !== idx) return message;
+  return message + STARGAZER_SUFFIX;
+}
+
 export function getDeclarationMessage(
   state: GameState,
   cardId: number,
@@ -36,36 +43,43 @@ export function getDeclarationMessage(
   const idx = playerIndex ?? state.currentPlayerIndex;
   const playerName = state.players[idx]?.name ?? 'A player';
 
+  let message: string;
+
   if (isHeroCard(card)) {
     const slotKey = HERO_SLOT_KEY[card.heroType];
     const slotLabel = SLOT_LABEL[slotKey] ?? card.heroType;
     const party = state.players[idx]?.party;
     const existing = party?.[slotKey];
     if (existing !== undefined && existing !== null) {
-      return `${playerName} is swapping their ${slotLabel} for ${card.name}.`;
+      message = `${playerName} is swapping their ${slotLabel} for ${card.name}.`;
+    } else {
+      message = `${playerName} is playing ${card.name} as their ${slotLabel}.`;
     }
-    return `${playerName} is playing ${card.name} as their ${slotLabel}.`;
+    return withStargazerNote(message, state, idx);
   }
 
   if (isWizardCard(card)) {
     const party = state.players[idx]?.party;
     const existing = party?.wizard;
     if (existing !== undefined && existing !== null) {
-      const existingCard = getCard(existing);
-      return `${playerName} is swapping their Wizard for ${card.name}.`;
+      message = `${playerName} is swapping their Wizard for ${card.name}.`;
+    } else {
+      message = `${playerName} is playing ${card.name} as their Wizard.`;
     }
-    return `${playerName} is playing ${card.name} as their Wizard.`;
+    return withStargazerNote(message, state, idx);
   }
 
   if (isQuestCard(card)) {
-    return `${playerName} is playing their Quest card!`;
+    message = `${playerName} is playing their Quest card!`;
+    return withStargazerNote(message, state, idx);
   }
 
   if (isEventCard(card)) {
     const eventId: EventId = card.eventId;
     if (eventId === 'hunting_expedition' && target?.playerIndex !== undefined) {
       const targetName = state.players[target.playerIndex]?.name ?? 'a player';
-      return `${playerName} is stealing a card from ${targetName}.`;
+      message = `${playerName} is stealing a card from ${targetName}.`;
+      return withStargazerNote(message, state, idx);
     }
     if (
       (eventId === 'archery_contest' ||
@@ -89,10 +103,13 @@ export function getDeclarationMessage(
                 : eventId === 'spell_of_summoning'
                   ? 'Wizard'
                   : 'Wizard';
-      return `${playerName} is targeting ${targetName} (${slot}).`;
+      message = `${playerName} is targeting ${targetName} (${slot}).`;
+      return withStargazerNote(message, state, idx);
     }
-    return `${playerName} is playing ${card.name}: ${card.effect}`;
+    message = `${playerName} is playing ${card.name}: ${card.effect}`;
+    return withStargazerNote(message, state, idx);
   }
 
-  return `${playerName} is playing ${(card as Card).name}.`;
+  message = `${playerName} is playing ${(card as Card).name}.`;
+  return withStargazerNote(message, state, idx);
 }
