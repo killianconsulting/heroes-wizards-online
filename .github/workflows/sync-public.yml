@@ -1,0 +1,56 @@
+# Sync private repo to a public repo by stripping artwork (images) and keeping only safe assets.
+# Requires: PUBLIC_REPO_TOKEN (secret) and PUBLIC_REPO (variable) in repo Settings → Secrets and variables → Actions.
+# PUBLIC_REPO should be "owner/repo-name", e.g. "your-username/heroes-wizards-public".
+
+name: Sync to public repo
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  PUBLIC_REPO: ${{ vars.PUBLIC_REPO }}
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout private repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Require PUBLIC_REPO variable
+        run: |
+          if [ -z "$PUBLIC_REPO" ]; then
+            echo "::error::Set the Actions variable PUBLIC_REPO (e.g. owner/heroes-wizards-public) in repo Settings → Secrets and variables → Actions."
+            exit 1
+          fi
+
+      - name: Remove artwork from public/images (keep README)
+        run: |
+          find public/images -type f ! -name 'README.md' -delete 2>/dev/null || true
+
+      - name: Remove artwork from public/cards (keep README)
+        run: |
+          find public/cards -type f ! -name 'README.md' -delete 2>/dev/null || true
+
+      - name: Commit stripped tree and push to public
+        env:
+          TOKEN: ${{ secrets.PUBLIC_REPO_TOKEN }}
+        run: |
+          if [ -z "$TOKEN" ]; then
+            echo "::error::Add the secret PUBLIC_REPO_TOKEN in repo Settings → Secrets and variables → Actions."
+            exit 1
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --staged --quiet; then
+            echo "No changes (artwork already absent). Skipping push."
+            exit 0
+          fi
+          git commit -m "chore: sync from private (artwork stripped for public repo)"
+          git remote add public "https://x-access-token:${TOKEN}@github.com/${PUBLIC_REPO}.git" 2>/dev/null || git remote set-url public "https://x-access-token:${TOKEN}@github.com/${PUBLIC_REPO}.git"
+          git push public HEAD:main --force

@@ -58,6 +58,7 @@ If you enjoy the game, please support the original: buy the physical card game f
 - `BUILD_PLAN.md` — Phased build plan (all phases complete)
 - `SUPABASE_SETUP.md` — Online multiplayer setup instructions
 - `PHASE4_GAME_SYNC.md` — Multiplayer sync model details
+- `SYNC_PUBLIC_REPO.md` — How to sync this repo to a public repo (artwork stripped)
 - `STYLE_GUIDE.md` — Color palette and typography reference
 - `DESIGN_NOTES.md` — Brand & tone reference
 - `Deck Library and Rules.md` — Card list and rules reference
