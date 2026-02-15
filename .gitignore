@@ -17,6 +17,8 @@ node_modules/
 # Misc
 .DS_Store
 *.pem
+sync_deploy_key
+sync_deploy_key.pub
 
 # Debug
 npm-debug.log*
