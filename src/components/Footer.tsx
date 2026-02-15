@@ -66,7 +66,7 @@ export default function Footer() {
         <p className="site-footer__issues">
           Found a bug or want to leave a comment? Report bugs on the{' '}
           <a
-            href="https://github.com/killianconsulting/heroes_wizards/issues"
+            href="https://github.com/killianconsulting/heroes-wizards-online/issues"
             target="_blank"
             rel="noopener noreferrer"
             className="site-footer__link"
