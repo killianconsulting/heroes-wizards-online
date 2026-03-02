@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/cleanup-lobbies",
       "schedule": "0 0 * * *"
+    },
+    {
+      "path": "/api/cron/heartbeat",
+      "schedule": "0 0 */3 * *"
     }
   ]
 }
